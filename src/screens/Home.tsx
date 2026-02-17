@@ -1,21 +1,51 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Pressable, FlatList, Keyboard } from 'react-native';
+import {
+  View,
+  Pressable,
+  FlatList,
+  Keyboard,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useTodos } from '../hooks/useTodos';
 import { useTheme } from '../contexts/ThemeContext';
 import TodoItem from '../components/TodoItem';
 import TodoModal from '../components/TodoModal';
 import { createHomeStyles } from '../styles/Home.styles';
+import { Label, Todo } from '../types';
 
-export default function Home() {
-  const { todos, add, toggle, remove, updateFields } = useTodos();
+interface HomeProps {
+  labels: Label[];
+  todos: Todo[];
+  add: (data: any) => void;
+  toggle: (id: string) => void;
+  remove: (id: string) => void;
+  updateFields: (id: string, fields: any) => void;
+  getTodosByLabel: (labelId: string) => Todo[];
+  getDefaultLabel: () => Label;
+}
+
+export default function Home({
+  labels,
+  todos,
+  add,
+  toggle,
+  remove,
+  updateFields,
+  getTodosByLabel,
+  getDefaultLabel,
+}: HomeProps) {
   const { theme, isDark } = useTheme();
   const styles = useMemo(() => createHomeStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [selectedLabelId, setSelectedLabelId] = useState<string>(
+    getDefaultLabel().id
+  );
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', (e) =>
@@ -31,22 +61,38 @@ export default function Home() {
     ? keyboardHeight + fabMargin 
     : fabMargin;
 
+  // Filter todos by selected label
+  const filteredTodos = useMemo(() => {
+    return getTodosByLabel(selectedLabelId);
+  }, [selectedLabelId, todos, getTodosByLabel]);
+
   const openCreate = useCallback(() => {
     setEditingId(null);
     setModalVisible(true);
   }, []);
 
-
-
   // Note: `reminderInterval` received from the form is treated as an offset in minutes.
   // The hook `useTodos` converts it into an absolute timestamp (ms) before storing.
-  const handleSave = useCallback((data: { title: string; description?: string; dueAt?: number; reminderInterval?: number }) => {
+  const handleSave = useCallback((data: {
+    title: string;
+    description?: string;
+    dueAt?: number;
+    reminderInterval?: number;
+    labelId?: string;
+  }) => {
     // Normalize and validate incoming data
-    const normalized: { title: string; description?: string; dueAt?: number; reminderInterval?: number } = {
+    const normalized: {
+      title: string;
+      description?: string;
+      dueAt?: number;
+      reminderInterval?: number;
+      labelId?: string;
+    } = {
       title: String(data.title || '').trim(),
       description: data.description ? String(data.description) : undefined,
       dueAt: data.dueAt !== undefined && data.dueAt !== null ? Number(data.dueAt) : undefined,
       reminderInterval: data.reminderInterval !== undefined && data.reminderInterval !== null ? Number(data.reminderInterval) : undefined,
+      labelId: data.labelId,
     };
 
     if (!normalized.title) return;
@@ -72,12 +118,57 @@ export default function Home() {
 
   return (
     <View style={styles.geral}>
+      {/* Label filter */}
+      <View style={[styles.labelFilterContainer, { paddingTop: insets.top + 8 }]}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.labelFilterContent}>
+          {labels.map(label => {
+            const isSelected = label.id === selectedLabelId;
+            const count = getTodosByLabel(label.id).length;
+            return (
+              <TouchableOpacity
+                key={label.id}
+                style={[
+                  styles.labelFilterChip,
+                  {
+                    backgroundColor: isSelected
+                      ? label.color
+                      : theme.cardBackground,
+                    borderColor: label.color,
+                    borderWidth: 1,
+                  },
+                ]}
+                onPress={() => setSelectedLabelId(label.id)}>
+                <Text
+                  style={[
+                    styles.labelFilterText,
+                    {
+                      color: isSelected ? '#FFFFFF' : theme.text,
+                    },
+                  ]}>
+                  {label.name} ({count})
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+
       <FlatList
-        data={todos}
+        data={filteredTodos}
         keyExtractor={t => t.id}
         renderItem={({ item }) => (
           <TodoItem todo={item} onToggle={onToggle} onRemove={onRemove} onEdit={onEdit} />
         )}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={[styles.emptyText, { color: theme.subText }]}>
+              Nenhuma tarefa neste label
+            </Text>
+          </View>
+        }
       />
       <View style={[styles.fabContainer, { bottom: fabBottom }]}>
         <Pressable onPress={openCreate}
@@ -94,6 +185,8 @@ export default function Home() {
         initial={editingTodo ?? undefined}
         onClose={() => setModalVisible(false)}
         onSave={handleSave}
+        labels={labels}
+        defaultLabelId={selectedLabelId}
       />
     </View>
   );

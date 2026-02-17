@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 
 import { Todo } from '../types';
@@ -8,8 +8,9 @@ import {
   scheduleNotificationFor,
   cancelNotificationById,
 } from '../services/notification';
+import { cleanupDeletedTodos, countDeletedTodos } from '../services/cleanup';
 
-export function useTodos() {
+export function useTodos(defaultLabelId?: string) {
   const [todos, setTodos] = useState<Todo[]>([]);
 
   // Monitora mudança de estado do app (background -> active)
@@ -77,6 +78,7 @@ export function useTodos() {
     dueInitial?: number;
     dueAt?: number;
     reminderInterval?: number;
+    labelId?: string;
   }) {
     console.log('[useTodos] add called', data);
     const now = Date.now();
@@ -97,6 +99,7 @@ export function useTodos() {
       dueInitial: data.dueInitial,
       dueAt: data.dueAt,
       reminderInterval,
+      labelId: data.labelId || defaultLabelId || StorageService.getDefaultLabelId(),
     };
 
     const notificationIds: string[] = [];
@@ -213,10 +216,127 @@ function updateFields(
 }
 
   function remove(id: string) {
+    console.log('[useTodos] remove called (soft delete)', { id });
     const target = todos.find(t => t.id === id);
     if (target) cancelNotificationById(target.notificationId);
-    setTodos(prev => prev.filter(todo => todo.id !== id));
+    
+    // Soft delete - marca como deleted ao invés de excluir
+    setTodos(prev => 
+      prev.map(todo => 
+        todo.id === id 
+          ? { ...todo, deleted: true, updatedAt: Date.now() }
+          : todo
+      )
+    );
   }
 
-  return { todos, add, toggle, remove, updateFields };
+  /**
+   * Retorna todos filtrados por labelId (excluindo deletados)
+   */
+  const getTodosByLabel = useCallback(
+    (labelId: string): Todo[] => {
+      return todos.filter(todo => todo.labelId === labelId && !todo.deleted);
+    },
+    [todos]
+  );
+
+  /**
+   * Move um todo para outro label
+   */
+  const moveTodoToLabel = useCallback((todoId: string, newLabelId: string) => {
+    setTodos(prev =>
+      prev.map(todo =>
+        todo.id === todoId
+          ? { ...todo, labelId: newLabelId, updatedAt: Date.now() }
+          : todo
+      )
+    );
+  }, []);
+
+  /**
+   * Atualiza múltiplos todos de um label específico (usado para sync do Drive)
+   * Faz merge preservando todos de outros labels
+   */
+  const updateTodos = useCallback((newTodos: Todo[], labelId?: string) => {
+    if (!labelId) {
+      // Se não tem labelId, substitui tudo (comportamento legado)
+      setTodos(newTodos);
+      return;
+    }
+
+    setTodos(prev => {
+      // Remove todos do label atual (exceto deletados antigos que já existiam)
+      const otherLabelTodos = prev.filter(t => t.labelId !== labelId);
+      
+      // Adiciona os novos todos do label
+      return [...otherLabelTodos, ...newTodos];
+    });
+  }, []);
+
+  /**
+   * Adiciona múltiplos todos (usado para importação)
+   */
+  const addTodos = useCallback((newTodos: Todo[]) => {
+    setTodos(prev => {
+      // Remove duplicatas por ID
+      const existingIds = new Set(prev.map(t => t.id));
+      const uniqueNewTodos = newTodos.filter(t => !existingIds.has(t.id));
+      return [...prev, ...uniqueNewTodos];
+    });
+  }, []);
+
+  /**
+   * Migra todos sem labelId para o label default
+   */
+  useEffect(() => {
+    if (defaultLabelId) {
+      setTodos(prev => {
+        let hasChanges = false;
+        const updated = prev.map(todo => {
+          if (!todo.labelId) {
+            hasChanges = true;
+            return { ...todo, labelId: defaultLabelId };
+          }
+          return todo;
+        });
+        return hasChanges ? updated : prev;
+      });
+    }
+  }, [defaultLabelId]);
+
+  /**
+   * Limpa permanentemente todos deletados há mais de X dias
+   */
+  const hardDeleteOldTodos = useCallback((daysOld: number = 30) => {
+    setTodos(prev => {
+      const cleaned = cleanupDeletedTodos(prev, daysOld);
+      const removed = prev.length - cleaned.length;
+      if (removed > 0) {
+        console.log(`[useTodos] Removidos ${removed} todos deletados antigos`);
+      }
+      return cleaned;
+    });
+  }, []);
+
+  /**
+   * Retorna quantidade de todos deletados
+   */
+  const getDeletedCount = useCallback(() => {
+    return countDeletedTodos(todos);
+  }, [todos]);
+
+  return {
+    todos,
+    add,
+    toggle,
+    remove,
+    updateFields,
+    getTodosByLabel,
+    moveTodoToLabel,
+    updateTodos,
+    addTodos,
+    hardDeleteOldTodos,
+    getDeletedCount,
+  };
 }
+
