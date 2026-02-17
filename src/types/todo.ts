@@ -2,9 +2,18 @@ export interface Todo {
   id: string;
   title: string;
   description?: string;
+
   completed: boolean;
+
   createdAt: number;
   updatedAt: number;
-  reminderAt?: number;       
-  notificationId?: string;   
+
+  dueInitial?: number;   // horário previsto de início
+  dueAt?: number;              // horário previsto de término
+  
+  // Timestamp (ms since epoch) indicando quando o lembrete deve disparar.
+  // OBS: embora o formulário aceite um valor em minutos como offset,
+  // o código converte esse offset em um timestamp absoluto e armazena aqui.
+  reminderInterval?: number;
+  notificationId?: string;
 }
