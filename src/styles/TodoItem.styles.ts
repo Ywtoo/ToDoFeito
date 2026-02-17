@@ -1,41 +1,40 @@
 import { StyleSheet, Platform } from 'react-native';
+import { colors, spacing, fontSize, borderRadius, shadows, Theme } from './variables';
 
-export const stylesTodoItem = StyleSheet.create({
+export const createTodoItemStyles = (theme: Theme) => StyleSheet.create({
   // ===== Layout / Card =====
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
-    marginVertical: 6,
-    marginHorizontal: 12,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    elevation: 2, // Android
-    shadowColor: '#000', // iOS
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
+    padding: spacing.lg,
+    marginVertical: spacing.xs + 2,
+    marginHorizontal: spacing.md,
+    backgroundColor: theme.surface,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: theme.borderLight,
+    ...shadows.small,
   },
 
   // ===== Checkbox / Indicator =====
   checkbox: {
-    width: 30,
-    height: 30,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: theme.border,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: spacing.md,
     backgroundColor: 'transparent',
   },
   checkboxCompleted: {
-    backgroundColor: '#1a73e8',
-    borderColor: '#1a73e8',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   check: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: fontSize.base - 2,
     fontWeight: '700',
   },
   checkboxPressed: {
@@ -48,56 +47,54 @@ export const stylesTodoItem = StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
-    fontSize: 22,
-    color: '#202124',
+    fontSize: fontSize.lg,
+    fontWeight: '600',
+    color: theme.text,
+    letterSpacing: -0.3,
   },
   titleCompleted: {
-    color: '#6b7280',
+    color: theme.textTertiary,
     textDecorationLine: 'line-through',
   },
   description: {
-    color: '#6b7280',
-    fontSize: 14,
-    marginTop: 4,
+    color: theme.textSecondary,
+    fontSize: fontSize.sm,
+    marginTop: spacing.xs - 2,
+    lineHeight: 18,
   },
 
   // ===== Right column (due date + actions) =====
   right: {
     alignItems: 'flex-end',
     justifyContent: 'space-between',
-    marginLeft: 8,
+    marginLeft: spacing.sm,
   },
   dueDate: {
-    fontSize: 12,
-    color: '#616161',
-    marginBottom: 8,
+    fontSize: fontSize.sm,
+    fontWeight: '500',
+    color: theme.textSecondary,
+    marginBottom: spacing.xs,
   },
   smallDate: {
-    fontSize: 10,
-    color: '#666',
+    fontSize: fontSize.xs,
+    color: theme.textTertiary,
+    marginBottom: spacing.xs - 2,
   },
 
   // ===== Actions / Buttons =====
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.xs,
   },
   actionButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  actionText: {
-    fontSize: 18,
-    color: '#1a73e8',
+    padding: spacing.xs,
+    borderRadius: borderRadius.sm,
   },
 
   // ===== Remove specific =====
-  remove: {
-    color: '#d93025',
-    fontSize: 22,
-  },
   removeButton: {
-    paddingLeft: 10,
-    paddingVertical: 6,
+    paddingLeft: spacing.sm,
+    paddingVertical: spacing.xs,
   },
 });

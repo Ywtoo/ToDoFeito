@@ -1,13 +1,8 @@
-import './Home.styles';
-import './TodoItem.styles';
-import './TodoModal.styles'; 
-import './DateTimePickerField.style';
+// Variáveis e tema
+export * from './variables';
 
-//Home
-
+// Funções de criação de estilos
 export * from './Home.styles';
-
-//TodoItens
 export * from './TodoItem.styles';
 export * from './TodoModal.styles';
 export * from './DateTimePickerField.style';

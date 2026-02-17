@@ -1,25 +1,22 @@
 import { StyleSheet, Platform } from 'react-native';
+import { colors, spacing, fontSize, borderRadius, Theme } from './variables';
 
-const primaryColor = Platform.select({ ios: '#007aff', android: '#2196f3', default: '#007aff' });
-const cancelColor = Platform.select({ ios: '#ff3b30', android: '#f44336', default: '#ff3b30' });
-const background = Platform.select({ ios: '#f8f8f8', android: '#fff', default: '#fff' });
-
-export const stylesDateTime = StyleSheet.create({
+export const createDateTimeStyles = (theme: Theme) => StyleSheet.create({
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: theme.overlay,
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: background,
-    paddingTop: 8,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 12,
-    paddingHorizontal: 16,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
+    backgroundColor: theme.surface,
+    paddingTop: spacing.sm,
+    paddingBottom: Platform.OS === 'ios' ? spacing.xl : spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderTopLeftRadius: borderRadius.md,
+    borderTopRightRadius: borderRadius.md,
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: theme.shadow,
         shadowOffset: { width: 0, height: -2 },
         shadowOpacity: 0.12,
         shadowRadius: 8,
@@ -31,47 +28,47 @@ export const stylesDateTime = StyleSheet.create({
   },
   // input-like
   inputContainer: {
-    backgroundColor: '#F6F7FB',
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    backgroundColor: theme.surfaceVariant,
+    borderRadius: borderRadius.sm + 2,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md + 2,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.06)',
+    borderColor: theme.borderLight,
     minHeight: 44,
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   inputText: {
-    color: '#111827',
-    fontSize: 16,
+    color: theme.text,
+    fontSize: fontSize.base,
   },
   placeholderText: {
-    color: '#9AA0A6',
-    fontSize: 16,
+    color: theme.textTertiary,
+    fontSize: fontSize.base,
   },
   actions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    paddingTop: 8,
-    paddingBottom: 8,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
   },
   actionButton: {
-    marginLeft: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    marginLeft: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   actionText: {
-    color: primaryColor,
+    color: colors.primary,
     fontWeight: '600',
-    fontSize: 16,
+    fontSize: fontSize.base,
   },
   cancelText: {
-    color: cancelColor,
+    color: theme.error,
   },
   text: {
-    marginTop: 16,
-    marginBottom: 16,
-    color: '#333',
+    marginTop: spacing.lg,
+    marginBottom: spacing.lg,
+    color: theme.text,
   },
   datePicker: {
     width: '100%'

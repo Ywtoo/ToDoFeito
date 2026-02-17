@@ -37,7 +37,8 @@ export function useTodos() {
               }
 
               // 2. Cria novo ciclo começando de AGORA (startFromNow=true -> 1º aviso em 1min)
-              const newIds = scheduleVerificationCycle(todo, true);
+              const newIdsArray = scheduleVerificationCycle(todo, true);
+              const newIds = newIdsArray.length > 0 ? newIdsArray.join(',') : undefined;
               
               hasUpdates = true;
               return { 
@@ -109,7 +110,7 @@ export function useTodos() {
     if (newTodo.dueAt) {
       console.log('[useTodos] agendando ciclo de verificações');
       const cycleIds = scheduleVerificationCycle(newTodo, false);
-      if (cycleIds) notificationIds.push(cycleIds);
+      if (cycleIds.length > 0) notificationIds.push(...cycleIds);
     }
 
     if (notificationIds.length > 0) {
@@ -149,8 +150,8 @@ export function useTodos() {
               ids.forEach(nid => cancelNotificationById(nid.trim()));
             }
             if (updated.dueAt) {
-              const idsStr = scheduleVerificationCycle(updated, true);
-              updated.notificationId = idsStr || undefined;
+              const idsArray = scheduleVerificationCycle(updated, true);
+              updated.notificationId = idsArray.length > 0 ? idsArray.join(',') : undefined;
               updated.updatedAt = Date.now();
             }
           }
@@ -196,7 +197,11 @@ function updateFields(
         if (updated.reminderInterval && !updated.completed) {
           console.log('[useTodos] reagendando notificação para todo atualizado');
           const nid = scheduleNotificationFor(updated);
-          if (nid) updated.notificationId = nid;
+          if (nid) {
+            updated.notificationId = nid;
+          } else {
+            updated.notificationId = undefined;
+          }
         } else {
           updated.notificationId = undefined;
         }

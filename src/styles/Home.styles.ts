@@ -1,73 +1,53 @@
 import { StyleSheet } from 'react-native';
+import { colors, spacing, borderRadius, shadows, Theme } from './variables';
 
-// Ripple colors to be used for Android `android_ripple` depending on theme
-export const fabRippleColors = {
-  dark: 'rgba(255,255,255,0.18)',
-  light: 'rgba(0,0,0,0.12)',
-};
-
-export const stylesHome = StyleSheet.create({
+export const createHomeStyles = (theme: Theme) => StyleSheet.create({
   geral: {
     flex: 1,
     paddingTop: 50,
-    paddingHorizontal: 10,
-    backgroundColor: 'white',
+    paddingHorizontal: spacing.md,
+    backgroundColor: theme.background,
   },
 
   // FAB (floating action button)
   fabContainer: {
     position: 'absolute',
-    right: 20,
+    right: spacing.xl,
     bottom: 28,
     width: 56,
     height: 56,
-    borderRadius: 28,
-    backgroundColor: '#1a73e8',
+    borderRadius: borderRadius.round,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 6, // Android shadow on wrapper
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
+    ...shadows.large,
     zIndex: 10,
-    overflow: 'visible', // não cortar a sombra
+    overflow: 'visible',
   },
 
   fab: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: borderRadius.round,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'transparent', // pressable transparente, cor vem do wrapper
-  },
-
-  fabText: {
-    color: '#fff',
-    fontSize: 28,
-    lineHeight: 30,
-    fontWeight: '600',
+    backgroundColor: 'transparent',
   },
 
   fabTest: {
     position: 'absolute',
-    left: 20,
+    left: spacing.xl,
     bottom: 28,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#f1f3f4',
-    borderRadius: 8,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: theme.disabled,
+    borderRadius: borderRadius.sm,
+    ...shadows.medium,
     zIndex: 12,
   },
 
   fabTestText: {
-    color: '#111827',
+    color: theme.text,
     fontSize: 14,
     fontWeight: '600',
   },

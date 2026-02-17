@@ -1,18 +1,21 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Pressable, Text, FlatList, Keyboard, useColorScheme } from 'react-native';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { View, Pressable, FlatList, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { useTodos } from '../hooks/useTodos';
+import { useTheme } from '../contexts/ThemeContext';
 import TodoItem from '../components/TodoItem';
 import TodoModal from '../components/TodoModal';
-import { stylesHome, fabRippleColors } from '../styles/Home.styles';
+import { createHomeStyles } from '../styles/Home.styles';
 
 export default function Home() {
   const { todos, add, toggle, remove, updateFields } = useTodos();
+  const { theme, isDark } = useTheme();
+  const styles = useMemo(() => createHomeStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
-  const colorScheme = useColorScheme();
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', (e) =>
@@ -22,8 +25,11 @@ export default function Home() {
     return () => { showSub.remove(); hideSub.remove(); };
   }, []);
 
-  const margin = 16;
-  const fabBottom = margin + Math.max(insets.bottom, keyboardHeight);
+  // FAB positioning: small margin from bottom (16px) or above keyboard
+  const fabMargin = 16;
+  const fabBottom = keyboardHeight > 0 
+    ? keyboardHeight + fabMargin 
+    : fabMargin;
 
   const openCreate = useCallback(() => {
     setEditingId(null);
@@ -62,11 +68,10 @@ export default function Home() {
     setModalVisible(true);
   }, []);
 
-  // choose ripple color from styles based on theme
-  const rippleColor = colorScheme === 'dark' ? fabRippleColors.dark : fabRippleColors.light;
+  const rippleColor = theme.ripple;
 
   return (
-    <View style={stylesHome.geral}>
+    <View style={styles.geral}>
       <FlatList
         data={todos}
         keyExtractor={t => t.id}
@@ -74,13 +79,13 @@ export default function Home() {
           <TodoItem todo={item} onToggle={onToggle} onRemove={onRemove} onEdit={onEdit} />
         )}
       />
-      <View style={[stylesHome.fabContainer, { bottom: fabBottom }]}>
+      <View style={[styles.fabContainer, { bottom: fabBottom }]}>
         <Pressable onPress={openCreate}
-          style={stylesHome.fab}
+          style={styles.fab}
           android_ripple={{ color: rippleColor, borderless: false }}
           accessibilityRole="button"
         >
-          <Text style={stylesHome.fabText}>+</Text>
+          <Icon name="add" size={32} color="#fff" />
         </Pressable>
       </View>
 

@@ -1,9 +1,10 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Modal, View, Text, TouchableOpacity, Platform } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 import { toDateValue, combineDateAndTime } from '../utils/dateUtils';
-import { stylesDateTime } from '../styles/DateTimePickerField.style';
+import { useTheme } from '../contexts/ThemeContext';
+import { createDateTimeStyles } from '../styles/DateTimePickerField.style';
 
 interface Props {
   value?: Date | null;
@@ -12,6 +13,9 @@ interface Props {
 }
 
 export default function DateTimePickerField({ value, onChange, placeholder = 'Selecionar data' }: Props) {
+  const { theme } = useTheme();
+  const styles = useMemo(() => createDateTimeStyles(theme), [theme]);
+  
   const [visible, setVisible] = useState(false);
   const [mode, setMode] = useState<'date' | 'time' | null>(null);
   const [tempDate, setTempDate] = useState<Date | null>(null);
@@ -87,8 +91,8 @@ export default function DateTimePickerField({ value, onChange, placeholder = 'Se
   return (
     <>
       <TouchableOpacity onPress={openPicker} activeOpacity={0.7}>
-        <View style={stylesDateTime.inputContainer}>
-          <Text style={display ? stylesDateTime.inputText : stylesDateTime.placeholderText}>
+        <View style={styles.inputContainer}>
+          <Text style={display ? styles.inputText : styles.placeholderText}>
             {display || placeholder}
           </Text>
         </View>
@@ -96,23 +100,23 @@ export default function DateTimePickerField({ value, onChange, placeholder = 'Se
 
       {Platform.OS === 'ios' ? (
         <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
-          <View style={stylesDateTime.modalBackdrop}>
-            <View style={stylesDateTime.modalContent}>
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modalContent}>
               <DateTimePicker
                 value={iosSelected ?? value ?? new Date()}
                 mode="datetime"
                 display="spinner"
                 onChange={onChangeIOS}
-                style={stylesDateTime.datePicker}
+                style={styles.datePicker}
               />
 
-              <View style={stylesDateTime.actions}>
-                <TouchableOpacity onPress={close} style={stylesDateTime.actionButton}>
-                  <Text style={[stylesDateTime.actionText, stylesDateTime.cancelText]}>Cancel</Text>
+              <View style={styles.actions}>
+                <TouchableOpacity onPress={close} style={styles.actionButton}>
+                  <Text style={[styles.actionText, styles.cancelText]}>Cancel</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity onPress={confirmIos} style={stylesDateTime.actionButton}>
-                  <Text style={stylesDateTime.actionText}>Done</Text>
+                <TouchableOpacity onPress={confirmIos} style={styles.actionButton}>
+                  <Text style={styles.actionText}>Done</Text>
                 </TouchableOpacity>
               </View>
             </View>

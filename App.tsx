@@ -5,26 +5,28 @@
  * @format
  */
 import React from 'react';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
+import { StatusBar, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import Home from './src/screens/Home';
+import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
+import AppNavigator from './src/navigation';
 
 function App() {
-  const isDarkMode = useColorScheme() === 'dark';
-
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }
 
 function AppContent() {
+  const { isDark, theme } = useTheme();
 
   return (
-    <View style={styles.container}>
-      <Home />
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={theme.background} />
+      <AppNavigator />
     </View>
   );
 }

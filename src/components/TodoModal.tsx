@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Modal, View, TextInput, Button } from 'react-native';
 import DateTimePickerField from './DateTimePickerField';
-import { stylesTodoModal } from '../styles/TodoModal.styles';
+import { useTheme } from '../contexts/ThemeContext';
+import { createTodoModalStyles } from '../styles/TodoModal.styles';
+import { colors } from '../styles/variables';
 import { Todo } from '../types';
 
 interface Props {
@@ -12,6 +14,9 @@ interface Props {
 }
 
 export default function TodoModal({ visible, onClose, onSave, initial }: Props) {
+  const { theme } = useTheme();
+  const styles = useMemo(() => createTodoModalStyles(theme), [theme]);
+  
   const [title, setTitle] = useState(initial?.title ?? '');
   const [description, setDescription] = useState(initial?.description ?? '');
   const [dueInitial, setDueInitial] = useState<Date | null>(initial?.dueInitial ? new Date(initial.dueInitial) : null);
@@ -52,22 +57,22 @@ export default function TodoModal({ visible, onClose, onSave, initial }: Props) 
 
   return (
     <Modal visible={visible} onRequestClose={handleCancel} animationType="slide" transparent>
-      <View style={stylesTodoModal.background}>
-        <View style={stylesTodoModal.modal}>
+      <View style={styles.background}>
+        <View style={styles.modal}>
           <TextInput
             placeholder="Title"
             value={title}
             onChangeText={setTitle}
-            style={stylesTodoModal.input}
-            placeholderTextColor="#9AA0A6"
+            style={styles.input}
+            placeholderTextColor={theme.textTertiary}
           />
           <TextInput
             placeholder="Description"
             value={description}
             onChangeText={setDescription}
-            style={[stylesTodoModal.input, stylesTodoModal.inputMultiline]}
+            style={[styles.input, styles.inputMultiline]}
             multiline
-            placeholderTextColor="#9AA0A6"
+            placeholderTextColor={theme.textTertiary}
           />
           
           <DateTimePickerField 
@@ -82,12 +87,12 @@ export default function TodoModal({ visible, onClose, onSave, initial }: Props) 
             placeholder="Término Previsto (Define o Prazo)"
           />
 
-          <View style={stylesTodoModal.actions}>
-            <View style={stylesTodoModal.btn}>
-              <Button title={initial ? 'Save' : 'Add'} onPress={handleSave} />
+          <View style={styles.actions}>
+            <View style={styles.btn}>
+              <Button title={initial ? 'Save' : 'Add'} onPress={handleSave} color={colors.primary} />
             </View>
-            <View style={stylesTodoModal.btn}>
-              <Button title="Cancel" onPress={handleCancel} color="#d93025" />
+            <View style={styles.btn}>
+              <Button title="Cancel" onPress={handleCancel} color={theme.error} />
             </View>
           </View>
         </View>

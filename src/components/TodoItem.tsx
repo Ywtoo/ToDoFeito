@@ -1,7 +1,11 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Text, Pressable } from "react-native";
+import Icon from 'react-native-vector-icons/Ionicons';
 import { Todo } from "../types";
-import { stylesTodoItem } from '../styles/TodoItem.styles';
+import { useTheme } from '../contexts/ThemeContext';
+import { createTodoItemStyles } from '../styles/TodoItem.styles';
+import { formatSituationalDate } from '../utils/dateUtils';
+import { colors } from '../styles/variables';
 
 interface Props {
   todo: Todo;
@@ -11,34 +15,37 @@ interface Props {
 }
 
 export default function TodoItem({ todo, onToggle, onRemove, onEdit }: Props) {
-  const dueInitialText = todo.dueInitial ? new Date(todo.dueInitial).toLocaleString() : null;
-  const dueText = todo.dueAt ? new Date(todo.dueAt).toLocaleString() : null;
+  const { theme } = useTheme();
+  const styles = useMemo(() => createTodoItemStyles(theme), [theme]);
+  
+  const dueInitialText = formatSituationalDate(todo.dueInitial);
+  const dueText = formatSituationalDate(todo.dueAt);
 
   return (
-    <View style={stylesTodoItem.card}>
+    <View style={styles.card}>
       <Pressable onPress={() => onToggle(todo.id)}
-        style={({ pressed }) => [stylesTodoItem.checkbox, todo.completed && stylesTodoItem.checkboxCompleted, pressed && stylesTodoItem.checkboxPressed]}
-        android_ripple={{ color: "rgba(0,0,0,0.06)", borderless: false }}>
-        {todo.completed ? <Text style={stylesTodoItem.check}>✓</Text> : null}
+        style={({ pressed }) => [styles.checkbox, todo.completed && styles.checkboxCompleted, pressed && styles.checkboxPressed]}
+        android_ripple={{ color: theme.ripple, borderless: true }}>
+        {todo.completed ? <Icon name="checkmark" size={18} color="#fff" /> : null}
       </Pressable>
 
-      <View style={stylesTodoItem.content}>
-        <Text style={[stylesTodoItem.title, todo.completed && stylesTodoItem.titleCompleted]}>
+      <View style={styles.content}>
+        <Text style={[styles.title, todo.completed && styles.titleCompleted]}>
           {todo.title}
         </Text>
-        {todo.description ? <Text style={stylesTodoItem.description}>{todo.description}</Text> : null}
+        {todo.description ? <Text style={styles.description}>{todo.description}</Text> : null}
       </View>
 
-      <View style={stylesTodoItem.right}>
-        {dueInitialText && <Text style={[stylesTodoItem.dueDate, stylesTodoItem.smallDate]}>Início: {dueInitialText}</Text>}
-        {dueText ? <Text style={stylesTodoItem.dueDate}>Fim: {dueText}</Text> : null}
+      <View style={styles.right}>
+        {dueInitialText && <Text style={styles.smallDate}>Início: {dueInitialText}</Text>}
+        {dueText ? <Text style={styles.dueDate}>Fim: {dueText}</Text> : null}
         
-        <View style={stylesTodoItem.actions}>
-          <Pressable onPress={() => onEdit(todo.id)} style={stylesTodoItem.actionButton}>
-            <Text style={stylesTodoItem.actionText}>✎</Text>
+        <View style={styles.actions}>
+          <Pressable onPress={() => onEdit(todo.id)} style={styles.actionButton}>
+            <Icon name="create-outline" size={20} color={colors.primary} />
           </Pressable>
-          <Pressable onPress={() => onRemove(todo.id)} style={stylesTodoItem.actionButton}>
-            <Text style={stylesTodoItem.remove}>✕</Text>
+          <Pressable onPress={() => onRemove(todo.id)} style={styles.actionButton}>
+            <Icon name="trash-outline" size={20} color={theme.error} />
           </Pressable>
         </View>
       </View>
