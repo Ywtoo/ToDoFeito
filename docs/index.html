@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Importar Label - ToDoFeito</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #F8FAFC;
+            color: #0F172A;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        .card {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+        .icon {
+            font-size: 48px;
+            margin-bottom: 1rem;
+        }
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        p {
+            color: #64748B;
+            margin-bottom: 1.5rem;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #3B82F6;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        .btn:hover {
+            background-color: #2563EB;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon">📂</div>
+        <h1>Importar Label</h1>
+        <p>Se você tiver o app <strong>ToDoFeito</strong> instalado, o label será importado automaticamente.</p>
+        <a href="#" id="deepLinkBtn" class="btn">Abrir no App</a>
+    </div>
+
+    <script>
+        // Tenta redirecionar para o scheme customizado se o Universal Link falhou
+        const urlParams = new URLSearchParams(window.location.search);
+        const folderId = urlParams.get('folderId');
+        const labelName = urlParams.get('labelName');
+        const deepLink = `todofeito://import?folderId=${folderId}&labelName=${labelName}`;
+
+        const btn = document.getElementById('deepLinkBtn');
+        if (folderId && labelName) {
+            btn.href = deepLink;
+            // Tenta abrir automaticamente após 1s
+            setTimeout(() => {
+                window.location.href = deepLink;
+            }, 1000);
+        } else {
+            btn.style.display = 'none';
+            document.querySelector('p').innerText = 'Link inválido ou incompleto.';
+        }
+    </script>
+</body>
+</html>
