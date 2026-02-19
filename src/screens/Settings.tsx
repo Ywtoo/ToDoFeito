@@ -2,16 +2,16 @@ import React from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   Switch,
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { createSettingsStyles } from '../styles/Settings.style';
+import ThemedIcon from '../components/ThemedIcon';
 import { useTheme } from '../contexts/ThemeContext';
-import { spacing, fontSize, borderRadius, shadows } from '../styles/variables';
+import { /* spacing, fontSize, borderRadius, shadows */ } from '../styles/variables';
 import { DriveUser, SyncStatus } from '../types';
 
 interface SettingsProps {
@@ -56,96 +56,7 @@ export default function Settings({ user, syncStatus, signIn, signOut, syncAll }:
     return date.toLocaleDateString('pt-BR');
   };
 
-  const styles = StyleSheet.create({
-    scrollContainer: {
-      flex: 1,
-      backgroundColor: theme.background,
-    },
-    container: { 
-      flex: 1, 
-      padding: spacing.lg,
-      paddingTop: spacing.lg + insets.top,
-    },
-    title: { 
-      fontSize: fontSize.xxl + 4, 
-      fontWeight: '700', 
-      marginBottom: spacing.xl,
-      color: theme.text,
-    },
-    section: {
-      backgroundColor: theme.surface,
-      padding: spacing.lg,
-      borderRadius: borderRadius.md,
-      marginBottom: spacing.md,
-      ...shadows.small,
-    },
-    sectionTitle: {
-      fontSize: fontSize.sm,
-      fontWeight: '600',
-      color: theme.textSecondary,
-      marginBottom: spacing.md,
-      textTransform: 'uppercase',
-      letterSpacing: 0.5,
-    },
-    row: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingVertical: spacing.sm,
-    },
-    rowLabel: {
-      fontSize: fontSize.base,
-      fontWeight: '500',
-      color: theme.text,
-    },
-    description: {
-      fontSize: fontSize.sm,
-      color: theme.textSecondary,
-      marginTop: spacing.md,
-      lineHeight: 20,
-    },
-    button: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: spacing.md,
-      borderRadius: borderRadius.sm,
-      marginTop: spacing.sm,
-      gap: spacing.sm,
-    },
-    buttonPrimary: {
-      backgroundColor: theme.primary,
-    },
-    buttonSecondary: {
-      backgroundColor: theme.textSecondary,
-    },
-    buttonText: {
-      color: '#FFFFFF',
-      fontSize: fontSize.base,
-      fontWeight: '600',
-    },
-    userInfo: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: spacing.md,
-      gap: spacing.md,
-    },
-    userEmail: {
-      fontSize: fontSize.base,
-      color: theme.text,
-      fontWeight: '500',
-    },
-    syncInfo: {
-      fontSize: fontSize.sm,
-      color: theme.textSecondary,
-      marginTop: spacing.xs,
-    },
-    syncError: {
-      fontSize: fontSize.sm,
-      color: '#F44336',
-      marginTop: spacing.xs,
-    },
-  });
+  const styles = createSettingsStyles(theme, insets.top);
 
   return (
     <ScrollView style={styles.scrollContainer}>
@@ -159,8 +70,8 @@ export default function Settings({ user, syncStatus, signIn, signOut, syncAll }:
           {user ? (
             <>
               <View style={styles.userInfo}>
-                <Icon name="account-circle" size={40} color={theme.primary} />
-                <View style={{ flex: 1 }}>
+                <ThemedIcon lib="MaterialIcons" name="account-circle" size={40} colorKey="primary" />
+                <View style={styles.userInner}>
                   <Text style={styles.userEmail}>{user.email}</Text>
                   {syncStatus.status === 'syncing' && (
                     <Text style={styles.syncInfo}>
@@ -184,14 +95,14 @@ export default function Settings({ user, syncStatus, signIn, signOut, syncAll }:
                 style={[styles.button, styles.buttonPrimary]}
                 onPress={handleSync}
                 disabled={syncStatus.status === 'syncing'}>
-                <Icon name="sync" size={20} color="#FFFFFF" />
+                <ThemedIcon lib="MaterialIcons" name="sync" size={20} colorKey="onPrimary" />
                 <Text style={styles.buttonText}>Sincronizar Agora</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.button, styles.buttonSecondary]}
                 onPress={handleSignOut}>
-                <Icon name="logout" size={20} color="#FFFFFF" />
+                <ThemedIcon lib="MaterialIcons" name="logout" size={20} colorKey="onPrimary" />
                 <Text style={styles.buttonText}>Sair</Text>
               </TouchableOpacity>
 
@@ -205,7 +116,7 @@ export default function Settings({ user, syncStatus, signIn, signOut, syncAll }:
               <TouchableOpacity
                 style={[styles.button, styles.buttonPrimary]}
                 onPress={handleSignIn}>
-                <Icon name="account-circle" size={20} color="#FFFFFF" />
+                <ThemedIcon lib="MaterialIcons" name="account-circle" size={20} colorKey="onPrimary" />
                 <Text style={styles.buttonText}>Entrar com Google</Text>
               </TouchableOpacity>
 

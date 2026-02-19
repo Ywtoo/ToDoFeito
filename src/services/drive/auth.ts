@@ -1,22 +1,31 @@
+/**
+ * High-level auth utilities: signIn, signOut and current-user helpers.
+ * Relies on `authTokens` and `authUtils` for token handling.
+ */
 import {
   GoogleSignin,
   statusCodes,
 } from '@react-native-google-signin/google-signin';
 import { DriveUser } from '../../types';
 import { StorageService } from '../storage';
+export { getAccessToken, invalidateTokenCache } from './authTokens';
+import { pickAccessToken, buildDriveUser } from './authUtils';
 
 // Configuração do Google Sign-In
 // IMPORTANTE: Configure os Web Client IDs no Google Cloud Console
 // Android: adicione o SHA-1 certificate fingerprint
 // iOS: adicione o iOS URL scheme no Info.plist
+
+// Token cache and refresh logic moved to authTokens.ts
+
 export const configureGoogleSignIn = () => {
   GoogleSignin.configure({
     scopes: [
-      'https://www.googleapis.com/auth/drive.file', // Acesso apenas aos arquivos criados pelo app
+      'https://www.googleapis.com/auth/drive', // Acesso completo ao Drive (necessário para compartilhamento)
     ],
     // webClientId deve ser configurado com o valor do Google Cloud Console
     // Por enquanto deixamos vazio - deve ser configurado antes do build
-    webClientId: '1018164630375-crpm2do5pooi82a626rmlm33jph1vacq.apps.googleusercontent.com', // TODO: Adicionar Web Client ID do Google Cloud Console
+    webClientId: '1018164630375-crpm2do5pooi82a626rmlm33jph1vacq.apps.googleusercontent.com',
     offlineAccess: true,
     forceCodeForRefreshToken: true,
   });
@@ -45,27 +54,19 @@ export const signIn = async (): Promise<DriveUser | null> => {
       throw new Error('Não foi possível obter dados do usuário');
     }
     
-    // Obter access token - está no data, não no user
-    let accessToken = data.serverAuthCode || data.idToken;
-    
-    // Tenta getTokens se disponível
+    // Obter access token preferindo getTokens() quando disponível
+    let tokens: { accessToken?: string } | null = null;
     try {
       if (typeof GoogleSignin.getTokens === 'function') {
-        const tokens = await GoogleSignin.getTokens();
-        if (tokens && tokens.accessToken) {
-          accessToken = tokens.accessToken;
-        }
+        tokens = await GoogleSignin.getTokens();
       }
     } catch (tokensErr) {
-      console.log('[signIn] getTokens não disponível, usando token alternativo');
+      console.log('[signIn] getTokens não disponível, usando token alternativo', tokensErr);
+      tokens = null;
     }
-    
-    const driveUser: DriveUser = {
-      email: user.email,
-      name: user.name || undefined,
-      photo: user.photo || undefined,
-      accessToken: accessToken || '',
-    };
+
+    const accessToken = pickAccessToken(data, tokens) || '';
+    const driveUser: DriveUser = buildDriveUser(user, accessToken);
     
     // Salva no cache
     await StorageService.saveDriveUser(driveUser);
@@ -128,26 +129,18 @@ export const getCurrentUser = async (): Promise<DriveUser | null> => {
             return null;
           }
           
-          let accessToken = data.serverAuthCode || data.idToken;
-
-          // Tenta obter tokens reais
+          let tokens: { accessToken?: string } | null = null;
           try {
             if (typeof GoogleSignin.getTokens === 'function') {
-              const tokens = await GoogleSignin.getTokens();
-              if (tokens && tokens.accessToken) {
-                accessToken = tokens.accessToken;
-              }
+              tokens = await GoogleSignin.getTokens();
             }
           } catch (tErr) {
             console.log('[getCurrentUser] getTokens failed in silent retry', tErr);
+            tokens = null;
           }
-          
-          return {
-            email: user.email,
-            name: user.name || undefined,
-            photo: user.photo || undefined,
-            accessToken: accessToken || '',
-          };
+
+          const accessToken = pickAccessToken(data, tokens) || '';
+          return buildDriveUser(user, accessToken);
         }
       } catch (silentError) {
         console.log('[getCurrentUser] signInSilently falhou:', silentError);
@@ -165,32 +158,21 @@ export const getCurrentUser = async (): Promise<DriveUser | null> => {
     }
 
     // Tenta obter tokens reais via getTokens()
-    let accessToken: string = '';
-    
+    let tokens: { accessToken?: string } | null = null;
     try {
       if (typeof GoogleSignin.getTokens === 'function') {
-        const tokens = await GoogleSignin.getTokens();
-        if (tokens && tokens.accessToken) {
-          accessToken = tokens.accessToken;
-        }
+        tokens = await GoogleSignin.getTokens();
       }
     } catch (tokensErr) {
       console.log('[getCurrentUser] getTokens falhou, tentando usar idToken/serverAuthCode do objeto user', tokensErr);
+      tokens = null;
     }
 
-    // Se getTokens falhou, tenta usar serverAuthCode ou idToken como fallback
-    if (!accessToken) {
-       accessToken = response.serverAuthCode || response.idToken || '';
-    }
+    const accessToken = pickAccessToken(response, tokens) || '';
 
     // Se temos um token válido, podemos retornar já
     if (accessToken) {
-      const driveUser: DriveUser = {
-        email: userInfo.email,
-        name: userInfo.name || undefined,
-        photo: userInfo.photo || undefined,
-        accessToken: accessToken,
-      };
+      const driveUser: DriveUser = buildDriveUser(userInfo, accessToken);
 
       // Atualiza o cache se diferente
       const cachedUser = await StorageService.loadDriveUser();
@@ -212,40 +194,33 @@ export const getCurrentUser = async (): Promise<DriveUser | null> => {
     
     // Se não há token no cache, faz signInSilently para obter novo token
     console.log('[getCurrentUser] Sem token no objeto nem em cache, tentando signInSilently...');
-    try {
-      const silentResult = await GoogleSignin.signInSilently();
-      if (silentResult.type === 'success') {
-        const data = silentResult.data;
-        const silentUser = data.user;
-        let newAccessToken = data.serverAuthCode || data.idToken;
-        
-        // Tenta obter tokens reais via getTokens() após silent sign-in
-        try {
-          if (typeof GoogleSignin.getTokens === 'function') {
-            const tokens = await GoogleSignin.getTokens();
-            if (tokens && tokens.accessToken) {
-              newAccessToken = tokens.accessToken;
-            }
-          }
-        } catch (tokensErr) {
-           console.log('[getCurrentUser] getTokens após silent sign-in falhou', tokensErr);
-        }
+      try {
+        const silentResult = await GoogleSignin.signInSilently();
+        if (silentResult.type === 'success') {
+          const data = silentResult.data;
+          const silentUser = data.user;
 
-        const driveUser: DriveUser = {
-          email: silentUser.email,
-          name: silentUser.name || undefined,
-          photo: silentUser.photo || undefined,
-          accessToken: newAccessToken || '',
-        };
-        
-        // Salva no cache
-        await StorageService.saveDriveUser(driveUser);
-        
-        return driveUser;
+          let tokensAfterSilent: { accessToken?: string } | null = null;
+          try {
+            if (typeof GoogleSignin.getTokens === 'function') {
+              tokensAfterSilent = await GoogleSignin.getTokens();
+            }
+          } catch (tokensErr) {
+            console.log('[getCurrentUser] getTokens após silent sign-in falhou', tokensErr);
+            tokensAfterSilent = null;
+          }
+
+          const newAccessToken = pickAccessToken(data, tokensAfterSilent) || '';
+          const driveUser: DriveUser = buildDriveUser(silentUser, newAccessToken);
+
+          // Salva no cache
+          await StorageService.saveDriveUser(driveUser);
+
+          return driveUser;
+        }
+      } catch (error) {
+        console.log('[getCurrentUser] signInSilently falhou ao obter tokens:', error);
       }
-    } catch (error) {
-      console.log('[getCurrentUser] signInSilently falhou ao obter tokens:', error);
-    }
     
     // Fallback: retorna user sem token (vai falhar nas chamadas de API)
     return {
@@ -259,21 +234,4 @@ export const getCurrentUser = async (): Promise<DriveUser | null> => {
     return null;
   }
 };
-
-/**
- * Obtém o access token atual (usa o token salvo no usuário)
- */
-export const getAccessToken = async (): Promise<string | null> => {
-  try {
-    const currentUser = await getCurrentUser();
-    if (!currentUser || !currentUser.accessToken) {
-      console.log('[getAccessToken] Usuário ou token não disponível');
-      return null;
-    }
-    
-    return currentUser.accessToken;
-  } catch (error: any) {
-    console.error('[getAccessToken] Erro:', error.message || error);
-    return null;
-  }
-};
+// Token cache and refresh logic moved to authTokens.ts and re-exported above

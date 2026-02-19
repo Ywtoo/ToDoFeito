@@ -1,7 +1,9 @@
+/**
+ * Share helpers: generate links, enable public sharing and parse import links.
+ */
 import { Label } from '../../types';
-import { createPublicPermission } from './api';
-
-const APP_SCHEME = 'todofeito';
+import { createPublicPermission } from './permissions';
+import { buildShareUrl, getShareMessage as buildShareMessage, parseImportLink as parseLink } from './shareUtils';
 
 /**
  * Gera um link de importação para compartilhar um label
@@ -15,11 +17,7 @@ export const generateShareLink = (
   }
 
   const { folderId } = label.driveMetadata;
-  
-  // Gera deep link personalizado
-  // Formato: todofeito://import?folderId=<ID>&labelName=<NOME>
-  const labelName = encodeURIComponent(label.name);
-  return `${APP_SCHEME}://import?folderId=${folderId}&labelName=${labelName}`;
+  return buildShareUrl(folderId, label.name);
 };
 
 /**
@@ -29,20 +27,34 @@ export const enableSharing = async (
   label: Label
 ): Promise<boolean> => {
   if (!label.driveMetadata) {
-    console.error('Label não está sincronizado com o Drive');
+    console.error('[enableSharing] Label não está sincronizado com o Drive');
     return false;
   }
 
   const { folderId, fileId } = label.driveMetadata;
+  console.log('[enableSharing] Habilitando compartilhamento:', { folderId, fileId });
 
   try {
     // Torna a pasta e o arquivo acessíveis por qualquer pessoa com o link
+    console.log('[enableSharing] Criando permissão para pasta:', folderId);
     const folderPermission = await createPublicPermission(folderId);
-    const filePermission = await createPublicPermission(fileId);
+    console.log('[enableSharing] Permissão da pasta:', folderPermission);
+    
+    let filePermission = true;
 
-    return folderPermission && filePermission;
+    if (fileId) {
+      console.log('[enableSharing] Criando permissão para arquivo:', fileId);
+      filePermission = await createPublicPermission(fileId);
+      console.log('[enableSharing] Permissão do arquivo:', filePermission);
+    } else {
+      console.log('[enableSharing] FileId vazio, pulando permissão de arquivo');
+    }
+
+    const success = folderPermission && filePermission;
+    console.log('[enableSharing] Compartilhamento', success ? 'habilitado' : 'falhou');
+    return success;
   } catch (error) {
-    console.error('Enable sharing error:', error);
+    console.error('[enableSharing] Erro:', error);
     return false;
   }
 };
@@ -51,43 +63,14 @@ export const enableSharing = async (
  * Mensagem pré-pronta para compartilhar via email/WhatsApp
  */
 export const getShareMessage = (labelName: string, link: string): string => {
-  return `Olá! 👋
-
-Estou compartilhando o label "${labelName}" com você no ToDoFeito.
-
-Clique no link abaixo para adicionar as tarefas compartilhadas ao seu app:
-
-${link}
-
-Assim poderemos acompanhar nossas tarefas juntos! ✅`;
+  return buildShareMessage(labelName, link);
 };
 
 /**
- * Parseia um deep link de importação
+ * Parseia um link de importação (HTTPS ou custom scheme)
  */
 export const parseImportLink = (
   url: string
 ): { folderId: string; labelName: string } | null => {
-  try {
-    const parsed = new URL(url);
-    
-    if (parsed.protocol !== `${APP_SCHEME}:` || parsed.hostname !== 'import') {
-      return null;
-    }
-
-    const folderId = parsed.searchParams.get('folderId');
-    const labelName = parsed.searchParams.get('labelName');
-
-    if (!folderId || !labelName) {
-      return null;
-    }
-
-    return {
-      folderId,
-      labelName: decodeURIComponent(labelName),
-    };
-  } catch (error) {
-    console.error('Parse import link error:', error);
-    return null;
-  }
+  return parseLink(url);
 };

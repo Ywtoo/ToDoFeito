@@ -1,70 +1,55 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Pressable,
-  FlatList,
-  Keyboard,
-  Text,
   ScrollView,
+  Text,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Icon from 'react-native-vector-icons/Ionicons';
+import ThemedIcon from '../components/ThemedIcon';
 import { useTheme } from '../contexts/ThemeContext';
+import { useLabelsContext } from '../contexts/LabelsContext';
 import TodoItem from '../components/TodoItem';
 import TodoModal from '../components/TodoModal';
-import { createHomeStyles } from '../styles/Home.styles';
-import { Label, Todo } from '../types';
+import { createHomeStyles, getFabStyle, getColorDotStyle } from '../styles/Home.styles';
+import { Label, Todo, SyncStatus } from '../types';
 
 interface HomeProps {
-  labels: Label[];
   todos: Todo[];
   add: (data: any) => void;
   toggle: (id: string) => void;
   remove: (id: string) => void;
   updateFields: (id: string, fields: any) => void;
   getTodosByLabel: (labelId: string) => Todo[];
-  getDefaultLabel: () => Label;
+  syncStatus?: SyncStatus;
 }
 
 export default function Home({
-  labels,
   todos,
   add,
   toggle,
   remove,
   updateFields,
   getTodosByLabel,
-  getDefaultLabel,
+  syncStatus,
 }: HomeProps) {
-  const { theme, isDark } = useTheme();
-  const styles = useMemo(() => createHomeStyles(theme), [theme]);
+  const { labels, getDefaultLabel } = useLabelsContext();
+  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [expandedLabelId, setExpandedLabelId] = useState<string | null>(null);
+
+  // FAB positioning
+  const fabMargin = 16;
+  const fabBottom = fabMargin;
+
+  const styles = useMemo(() => createHomeStyles(theme, { insetsTop: insets.top, fabBottom }), [theme, insets.top, fabBottom]);
   const [selectedLabelId, setSelectedLabelId] = useState<string>(
     getDefaultLabel().id
   );
-
-  useEffect(() => {
-    const showSub = Keyboard.addListener('keyboardDidShow', (e) =>
-      setKeyboardHeight(e.endCoordinates?.height || 0)
-    );
-    const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
-    return () => { showSub.remove(); hideSub.remove(); };
-  }, []);
-
-  // FAB positioning: small margin from bottom (16px) or above keyboard
-  const fabMargin = 16;
-  const fabBottom = keyboardHeight > 0 
-    ? keyboardHeight + fabMargin 
-    : fabMargin;
-
-  // Filter todos by selected label
-  const filteredTodos = useMemo(() => {
-    return getTodosByLabel(selectedLabelId);
-  }, [selectedLabelId, todos, getTodosByLabel]);
 
   const openCreate = useCallback(() => {
     setEditingId(null);
@@ -76,6 +61,7 @@ export default function Home({
   const handleSave = useCallback((data: {
     title: string;
     description?: string;
+    dueInitial?: number;
     dueAt?: number;
     reminderInterval?: number;
     labelId?: string;
@@ -84,12 +70,14 @@ export default function Home({
     const normalized: {
       title: string;
       description?: string;
-      dueAt?: number;
+      dueInitial?: number | null;
+      dueAt?: number | null;
       reminderInterval?: number;
       labelId?: string;
     } = {
       title: String(data.title || '').trim(),
       description: data.description ? String(data.description) : undefined,
+      dueInitial: data.dueInitial !== undefined ? (data.dueInitial || null) : undefined,
       dueAt: data.dueAt !== undefined && data.dueAt !== null ? Number(data.dueAt) : undefined,
       reminderInterval: data.reminderInterval !== undefined && data.reminderInterval !== null ? Number(data.reminderInterval) : undefined,
       labelId: data.labelId,
@@ -118,65 +106,48 @@ export default function Home({
 
   return (
     <View style={styles.geral}>
-      {/* Label filter */}
-      <View style={[styles.labelFilterContainer, { paddingTop: insets.top + 8 }]}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.labelFilterContent}>
-          {labels.map(label => {
-            const isSelected = label.id === selectedLabelId;
-            const count = getTodosByLabel(label.id).length;
+      {/* Centered accordion list (each label expands to show todos) */}
+      <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.accordionContainer}>
+        {labels.map(label => {
+            const isExpanded = label.id === expandedLabelId;
+            const todosForLabel = getTodosByLabel(label.id);
             return (
-              <TouchableOpacity
-                key={label.id}
-                style={[
-                  styles.labelFilterChip,
-                  {
-                    backgroundColor: isSelected
-                      ? label.color
-                      : theme.cardBackground,
-                    borderColor: label.color,
-                    borderWidth: 1,
-                  },
-                ]}
-                onPress={() => setSelectedLabelId(label.id)}>
-                <Text
-                  style={[
-                    styles.labelFilterText,
-                    {
-                      color: isSelected ? '#FFFFFF' : theme.text,
-                    },
-                  ]}>
-                  {label.name} ({count})
-                </Text>
-              </TouchableOpacity>
+              <View key={label.id} style={styles.accordionItem}>
+                <TouchableOpacity
+                  style={styles.accordionHeader}
+                  onPress={() => {
+                    setSelectedLabelId(label.id);
+                    setExpandedLabelId(prev => prev === label.id ? null : label.id);
+                  }}>
+                  <ThemedIcon lib="Ionicons" name={isExpanded ? 'chevron-down' : 'chevron-forward'} size={18} colorKey="textSecondary" style={styles.chevronIcon} />
+                  <View style={[styles.colorDot, getColorDotStyle(label.color)]} />
+                  <Text style={styles.accordionHeaderText}>
+                    {label.name}
+                  </Text>
+                  <Text style={styles.labelCountText}>({todosForLabel.length})</Text>
+                </TouchableOpacity>
+
+                <View style={styles.headerDivider} />
+
+                {isExpanded ? (
+                  <View style={styles.accordionContent}>
+                    {todosForLabel.length ? todosForLabel.map(t => (
+                      <TodoItem key={t.id} todo={t} onToggle={onToggle} onRemove={onRemove} onEdit={onEdit} />
+                    )) : <Text style={styles.todoPreviewText}>Sem tarefas</Text>}
+                  </View>
+                ) : null}
+              </View>
             );
           })}
-        </ScrollView>
-      </View>
+      </ScrollView>
 
-      <FlatList
-        data={filteredTodos}
-        keyExtractor={t => t.id}
-        renderItem={({ item }) => (
-          <TodoItem todo={item} onToggle={onToggle} onRemove={onRemove} onEdit={onEdit} />
-        )}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: theme.subText }]}>
-              Nenhuma tarefa neste label
-            </Text>
-          </View>
-        }
-      />
-      <View style={[styles.fabContainer, { bottom: fabBottom }]}>
+      <View style={styles.fabContainer}>
         <Pressable onPress={openCreate}
-          style={styles.fab}
+          style={getFabStyle(theme)}
           android_ripple={{ color: rippleColor, borderless: false }}
           accessibilityRole="button"
         >
-          <Icon name="add" size={32} color="#fff" />
+          <ThemedIcon lib="Ionicons" name="add" size={32} colorKey="onPrimary" />
         </Pressable>
       </View>
 

@@ -1,19 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   FlatList,
   TouchableOpacity,
   TextInput,
-  Modal,
   Alert,
   Share,
   ActivityIndicator,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import ThemedIcon from '../components/ThemedIcon';
+import { BaseModal } from '../components/BaseModal';
 import { Label, Todo } from '../types';
 import { useTheme } from '../contexts/ThemeContext';
+import { useLabelsContext } from '../contexts/LabelsContext';
+import { createLabelsStyles, getColorDotStyle } from '../styles/Labels.style';
 import {
   generateShareLink,
   enableSharing,
@@ -21,13 +23,11 @@ import {
 } from '../services/drive/share';
 
 interface LabelsScreenProps {
-  labels: Label[];
   todos: Todo[];
-  createLabel: (name: string, color: string) => Label;
-  updateLabel: (labelId: string, updates: Partial<Label>) => void;
-  deleteLabel: (labelId: string) => void;
-  syncLabelNow: (labelId: string) => Promise<boolean>;
+  syncLabelNow: (labelId: string) => Promise<Label | null>;
   user: any;
+  markLabelDeleted?: (label: Label) => void | Promise<void>;
+  leaveSharedLabel?: (labelId: string) => Promise<boolean>;
 }
 
 const COLORS = [
@@ -42,20 +42,22 @@ const COLORS = [
 ];
 
 export const LabelsScreen: React.FC<LabelsScreenProps> = ({
-  labels,
   todos,
-  createLabel,
-  updateLabel,
-  deleteLabel,
   syncLabelNow,
   user,
+  markLabelDeleted,
+  leaveSharedLabel,
 }) => {
+  const { labels, createLabel, updateLabel, deleteLabel } = useLabelsContext();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
+  const styles = useMemo(() => createLabelsStyles(theme, { insetsTop: insets.top }), [theme, insets.top]);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingLabel, setEditingLabel] = useState<Label | null>(null);
   const [labelName, setLabelName] = useState('');
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
   const [sharingLabelId, setSharingLabelId] = useState<string | null>(null);
+  const [expandedLabelId, setExpandedLabelId] = useState<string | null>(null);
 
   const getTodoCount = (labelId: string) => {
     return todos.filter(t => t.labelId === labelId).length;
@@ -93,28 +95,19 @@ export const LabelsScreen: React.FC<LabelsScreenProps> = ({
     try {
       // Sincroniza o label primeiro se ainda não tem driveMetadata
       if (!label.driveMetadata) {
-        const synced = await syncLabelNow(label.id);
-        if (!synced) {
+        const syncedLabel = await syncLabelNow(label.id);
+        if (!syncedLabel || !syncedLabel.driveMetadata) {
           Alert.alert('Erro', 'Falha ao sincronizar label com o Drive');
           setSharingLabelId(null);
           return;
         }
-        
-        // Aguarda um momento para garantir que o label foi atualizado
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Busca o label atualizado
-        const updatedLabel = labels.find(l => l.id === label.id);
-        if (!updatedLabel || !updatedLabel.driveMetadata) {
-          Alert.alert('Erro', 'Label não foi sincronizado corretamente');
-          setSharingLabelId(null);
-          return;
-        }
-        label = updatedLabel;
+        label = syncedLabel;
       }
 
       // Habilita compartilhamento
+      console.log('[Labels] Habilitando compartilhamento para label:', label.name);
       const enabled = await enableSharing(label);
+      console.log('[Labels] Compartilhamento habilitado?', enabled);
       if (!enabled) {
         Alert.alert('Erro', 'Falha ao habilitar compartilhamento');
         setSharingLabelId(null);
@@ -145,9 +138,15 @@ export const LabelsScreen: React.FC<LabelsScreenProps> = ({
     }
   };
 
-  const handleDelete = (label: Label) => {
+  const handleDelete = async (label: Label) => {
     if (label.isDefault) {
       Alert.alert('Aviso', 'Não é possível deletar o label padrão');
+      return;
+    }
+
+    // Colaboradores não podem deletar, apenas sair
+    if (label.ownershipRole === 'collaborator') {
+      handleLeaveSharedLabel(label);
       return;
     }
 
@@ -162,7 +161,40 @@ export const LabelsScreen: React.FC<LabelsScreenProps> = ({
       {
         text: 'Deletar',
         style: 'destructive',
-        onPress: () => deleteLabel(label.id),
+        onPress: async () => {
+          // Marca no metadata se sincronizado
+          if (markLabelDeleted && label.driveMetadata) {
+            await markLabelDeleted(label);
+          }
+          // Deleta localmente
+          deleteLabel(label.id);
+        },
+      },
+    ]);
+  };
+
+  const handleLeaveSharedLabel = (label: Label) => {
+    const count = getTodoCount(label.id);
+    const message =
+      count > 0
+        ? `Você tem ${count} tarefa(s) neste label compartilhado. Ao sair, elas serão removidas do seu dispositivo (mas permanecerão para o proprietário). Continuar?`
+        : 'Deseja sair deste label compartilhado?';
+
+    Alert.alert('Sair do label', message, [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Sair',
+        style: 'destructive',
+        onPress: async () => {
+          if (leaveSharedLabel) {
+            const success = await leaveSharedLabel(label.id);
+            if (success) {
+              Alert.alert('Sucesso', 'Você saiu do label compartilhado');
+            } else {
+              Alert.alert('Erro', 'Falha ao sair do label');
+            }
+          }
+        },
       },
     ]);
   };
@@ -189,285 +221,169 @@ export const LabelsScreen: React.FC<LabelsScreenProps> = ({
 
   const renderLabel = ({ item }: { item: Label }) => {
     const count = getTodoCount(item.id);
+    const isExpanded = expandedLabelId === item.id;
 
     return (
-      <View
-        style={[
-          styles.labelCard,
-          { backgroundColor: theme.cardBackground },
-        ]}>
-        <View style={styles.labelHeader}>
-          <View style={styles.labelInfo}>
-            <View
-              style={[styles.colorDot, { backgroundColor: item.color }]}
-            />
-            <View style={styles.labelTextContainer}>
-              <Text style={[styles.labelName, { color: theme.text }]}>
-                {item.name}
-              </Text>
-              <Text style={[styles.labelCount, { color: theme.subText }]}>
+      <View style={styles.accordionItem}>
+        <TouchableOpacity
+          style={styles.accordionHeader}
+          onPress={() => setExpandedLabelId(prev => prev === item.id ? null : item.id)}>
+          <ThemedIcon 
+            lib="Ionicons" 
+            name={isExpanded ? 'chevron-down' : 'chevron-forward'} 
+            size={18} 
+            colorKey="textSecondary" 
+            style={styles.chevronIcon} 
+          />
+          <View style={[styles.colorDot, getColorDotStyle(item.color)]} />
+          <Text style={styles.labelName}>
+            {item.name}
+          </Text>
+          <Text style={styles.labelCount}>
+            ({count})
+          </Text>
+          {item.shared && (
+            <ThemedIcon lib="MaterialIcons" name="cloud" size={18} colorKey="textTertiary" style={styles.cloudIconHeader} />
+          )}
+        </TouchableOpacity>
+
+        <View style={styles.headerDivider} />
+
+        {isExpanded && (
+          <View style={styles.accordionContent}>
+            <View style={styles.detailRow}>
+              <ThemedIcon lib="MaterialIcons" name="checklist" size={16} colorKey="textSecondary" />
+              <Text style={styles.detailText}>
                 {count} {count === 1 ? 'tarefa' : 'tarefas'}
               </Text>
             </View>
-          </View>
-          <View style={styles.labelActions}>
+
             {item.shared && (
-              <Icon name="cloud" size={20} color={theme.subText} />
+              <View style={styles.detailRow}>
+                <ThemedIcon lib="MaterialIcons" name="cloud" size={16} colorKey="textSecondary" />
+                <Text style={styles.detailText}>
+                  {item.ownershipRole === 'owner' 
+                    ? 'Compartilhado (Você é o dono)' 
+                    : item.ownershipRole === 'collaborator'
+                    ? 'Colaborando (Compartilhado com você)'
+                    : 'Compartilhado'}
+                </Text>
+              </View>
             )}
-            {user && !item.isDefault && (
-              <TouchableOpacity
-                onPress={() => handleShare(item)}
-                style={styles.actionButton}
-                disabled={sharingLabelId === item.id}>
-                {sharingLabelId === item.id ? (
-                  <ActivityIndicator size="small" color={theme.primary} />
-                ) : (
-                  <Icon name="share" size={20} color={theme.primary} />
+
+            {item.isDefault && (
+              <View style={styles.detailRow}>
+                <ThemedIcon lib="MaterialIcons" name="star" size={16} colorKey="textSecondary" />
+                <Text style={styles.detailText}>Label padrão</Text>
+              </View>
+            )}
+
+            <View style={styles.actionsRow}>
+              <View style={styles.labelActions}>
+                {/* Apenas owner pode compartilhar */}
+                {user && !item.isDefault && item.ownershipRole !== 'collaborator' && (
+                  <TouchableOpacity
+                    onPress={() => handleShare(item)}
+                    style={styles.actionButton}
+                    disabled={sharingLabelId === item.id}>
+                    {sharingLabelId === item.id ? (
+                      <ActivityIndicator size="small" color={theme.text} />
+                    ) : (
+                      <ThemedIcon lib="MaterialIcons" name="share" size={20} colorKey="text" />
+                    )}
+                  </TouchableOpacity>
                 )}
-              </TouchableOpacity>
-            )}
-            {!item.isDefault && (
-              <>
-                <TouchableOpacity
-                  onPress={() => openEditModal(item)}
-                  style={styles.actionButton}>
-                  <Icon name="edit" size={20} color={theme.primary} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => handleDelete(item)}
-                  style={styles.actionButton}>
-                  <Icon name="delete" size={20} color="#F44336" />
-                </TouchableOpacity>
-              </>
-            )}
+                {!item.isDefault && (
+                  <>
+                    <TouchableOpacity
+                      onPress={() => openEditModal(item)}
+                      style={styles.actionButton}>
+                      <ThemedIcon lib="MaterialIcons" name="edit" size={20} colorKey="text" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => handleDelete(item)}
+                      style={styles.actionButton}>
+                      <ThemedIcon 
+                        lib="MaterialIcons" 
+                        name={item.ownershipRole === 'collaborator' ? 'exit-to-app' : 'delete'} 
+                        size={20} 
+                        colorKey="error" 
+                      />
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
+            </View>
           </View>
-        </View>
+        )}
       </View>
     );
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <View style={styles.container}>
       <FlatList
         data={labels}
         renderItem={renderLabel}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
-          <Text style={[styles.emptyText, { color: theme.subText }]}>
+          <Text style={styles.emptyText}>
             Nenhum label criado ainda
           </Text>
         }
       />
 
       <TouchableOpacity
-        style={[styles.fab, { backgroundColor: theme.primary }]}
+        style={[styles.fab]}
         onPress={openCreateModal}>
-        <Icon name="add" size={24} color="#FFFFFF" />
+        <ThemedIcon lib="MaterialIcons" name="add" size={24} colorKey="onPrimary" />
       </TouchableOpacity>
 
-      <Modal
+      <BaseModal
         visible={modalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={closeModal}>
-        <View style={styles.modalOverlay}>
-          <View
-            style={[
-              styles.modalContent,
-              { backgroundColor: theme.cardBackground },
-            ]}>
-            <Text style={[styles.modalTitle, { color: theme.text }]}>
-              {editingLabel ? 'Editar Label' : 'Novo Label'}
-            </Text>
-
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  color: theme.text,
-                  borderColor: theme.border,
-                  backgroundColor: theme.background,
-                },
-              ]}
-              placeholder="Nome do label"
-              placeholderTextColor={theme.subText}
-              value={labelName}
-              onChangeText={setLabelName}
-            />
-
-            <Text style={[styles.colorLabel, { color: theme.text }]}>
-              Cor
-            </Text>
-            <View style={styles.colorPicker}>
-              {COLORS.map(color => (
-                <TouchableOpacity
-                  key={color}
-                  style={[
-                    styles.colorOption,
-                    { backgroundColor: color },
-                    selectedColor === color && styles.colorSelected,
-                  ]}
-                  onPress={() => setSelectedColor(color)}
-                />
-              ))}
-            </View>
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.button, styles.cancelButton]}
-                onPress={closeModal}>
-                <Text style={styles.buttonText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  { backgroundColor: theme.primary },
-                ]}
-                onPress={handleCreateOrUpdate}>
-                <Text style={styles.buttonText}>
-                  {editingLabel ? 'Salvar' : 'Criar'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+        onClose={closeModal}
+        title={editingLabel ? 'Editar Label' : 'Novo Label'}
+        primaryButton={{
+          label: editingLabel ? 'Salvar' : 'Criar',
+          onPress: handleCreateOrUpdate,
+          disabled: !labelName.trim(),
+        }}
+        secondaryButton={{
+          label: 'Cancelar',
+          onPress: closeModal,
+        }}>
+        {/* Preview com bolinha colorida */}
+        <View style={styles.previewContainer}>
+          <View style={[styles.previewDot, getColorDotStyle(selectedColor)]} />
+          <Text style={styles.previewText}>
+            {labelName || 'Nome do label'}
+          </Text>
         </View>
-      </Modal>
+
+        <TextInput
+          style={styles.input}
+          placeholder="Nome do label"
+          placeholderTextColor={theme.textSecondary}
+          value={labelName}
+          onChangeText={setLabelName}
+        />
+
+        <Text style={styles.colorLabel}>Escolha uma cor</Text>
+        <View style={styles.colorPicker}>
+          {COLORS.map(color => (
+            <TouchableOpacity
+              key={color}
+              style={[
+                styles.colorOption,
+                getColorDotStyle(color),
+                selectedColor === color && styles.colorSelected,
+              ]}
+              onPress={() => setSelectedColor(color)}
+            />
+          ))}
+        </View>
+      </BaseModal>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  listContent: {
-    padding: 16,
-  },
-  labelCard: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  labelHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  labelInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  colorDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 12,
-  },
-  labelTextContainer: {
-    flex: 1,
-  },
-  labelName: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  labelCount: {
-    fontSize: 14,
-  },
-  labelActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  actionButton: {
-    padding: 4,
-  },
-  emptyText: {
-    textAlign: 'center',
-    marginTop: 32,
-    fontSize: 16,
-  },
-  fab: {
-    position: 'absolute',
-    right: 16,
-    bottom: 16,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    width: '85%',
-    borderRadius: 16,
-    padding: 24,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 20,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    marginBottom: 20,
-  },
-  colorLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  colorPicker: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 24,
-  },
-  colorOption: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  colorSelected: {
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  button: {
-    flex: 1,
-    padding: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#9E9E9E',
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});

@@ -1,46 +1,27 @@
 import { StyleSheet } from 'react-native';
-import { spacing, fontSize, borderRadius, shadows, Theme } from './variables';
+import { spacing, fontSize, borderRadius, Theme } from './variables';
 
 export const createTodoModalStyles = (theme: Theme) => StyleSheet.create({
-  background: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.xxl,
-    backgroundColor: theme.overlay,
-  },
-  modal: {
-    width: '100%',
-    maxWidth: 540,
-    backgroundColor: theme.surface,
-    padding: spacing.xxl,
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: theme.borderLight,
-    ...shadows.large,
+  sectionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: spacing.sm,
+    marginBottom: spacing.md,
+    color: theme.text,
   },
   input: {
-    backgroundColor: theme.surfaceVariant,
-    borderRadius: borderRadius.md,
-    paddingVertical: spacing.md + 2,
-    paddingHorizontal: spacing.lg,
+    backgroundColor: theme.background,
+    borderRadius: borderRadius.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
     fontSize: fontSize.base,
     color: theme.text,
     marginBottom: spacing.md,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: theme.border,
   },
   inputMultiline: {
-    minHeight: 80,
+    minHeight: 100,
     textAlignVertical: 'top',
-  },
-  actions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: spacing.md,
-    marginTop: spacing.lg,
-  },
-  btn: {
-    minWidth: 100,
   },
 });

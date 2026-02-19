@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { View, Text, Pressable } from "react-native";
-import Icon from 'react-native-vector-icons/Ionicons';
+import ThemedIcon from './ThemedIcon';
 import { Todo } from "../types";
 import { useTheme } from '../contexts/ThemeContext';
 import { createTodoItemStyles } from '../styles/TodoItem.styles';
@@ -18,15 +18,15 @@ export default function TodoItem({ todo, onToggle, onRemove, onEdit }: Props) {
   const { theme } = useTheme();
   const styles = useMemo(() => createTodoItemStyles(theme), [theme]);
   
-  const dueInitialText = formatSituationalDate(todo.dueInitial);
-  const dueText = formatSituationalDate(todo.dueAt);
+  const dueInitialText = formatSituationalDate(todo.dueInitial || null);
+  const dueText = formatSituationalDate(todo.dueAt || null);
 
   return (
     <View style={styles.card}>
       <Pressable onPress={() => onToggle(todo.id)}
         style={({ pressed }) => [styles.checkbox, todo.completed && styles.checkboxCompleted, pressed && styles.checkboxPressed]}
         android_ripple={{ color: theme.ripple, borderless: true }}>
-        {todo.completed ? <Icon name="checkmark" size={18} color="#fff" /> : null}
+        {todo.completed ? <ThemedIcon lib="Ionicons" name="checkmark" size={18} colorKey="onPrimary" /> : null}
       </Pressable>
 
       <View style={styles.content}>
@@ -42,10 +42,10 @@ export default function TodoItem({ todo, onToggle, onRemove, onEdit }: Props) {
         
         <View style={styles.actions}>
           <Pressable onPress={() => onEdit(todo.id)} style={styles.actionButton}>
-            <Icon name="create-outline" size={20} color={colors.primary} />
+            <ThemedIcon lib="Ionicons" name="create-outline" size={20} color={colors.primary} />
           </Pressable>
           <Pressable onPress={() => onRemove(todo.id)} style={styles.actionButton}>
-            <Icon name="trash-outline" size={20} color={theme.error} />
+            <ThemedIcon lib="Ionicons" name="trash-outline" size={20} colorKey="error" />
           </Pressable>
         </View>
       </View>

@@ -11,8 +11,6 @@ export const createTodoItemStyles = (theme: Theme) => StyleSheet.create({
     marginHorizontal: spacing.md,
     backgroundColor: theme.surface,
     borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: theme.borderLight,
     ...shadows.small,
   },
 
@@ -33,7 +31,7 @@ export const createTodoItemStyles = (theme: Theme) => StyleSheet.create({
     borderColor: colors.primary,
   },
   check: {
-    color: '#fff',
+    color: theme.onPrimary,
     fontSize: fontSize.base - 2,
     fontWeight: '700',
   },

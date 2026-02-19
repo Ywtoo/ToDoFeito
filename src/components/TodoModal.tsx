@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Modal, View, TextInput, Button } from 'react-native';
+import { TextInput, Text, View } from 'react-native';
 import DateTimePickerField from './DateTimePickerField';
 import { LabelPicker } from './LabelPicker';
+import { BaseModal } from './BaseModal';
 import { useTheme } from '../contexts/ThemeContext';
 import { createTodoModalStyles } from '../styles/TodoModal.styles';
-import { colors } from '../styles/variables';
 import { Todo, Label } from '../types';
 
 interface Props {
@@ -64,7 +64,7 @@ export default function TodoModal({
       description: description.trim() || undefined,
       dueInitial: dueInitial?.getTime(),
       dueAt: dueAt?.getTime(),
-      reminderInterval: dueAt ? 30 : undefined,
+      reminderInterval: dueAt ? 0 : undefined, // 0 = notification at deadline
       labelId,
     });
     clearAll();
@@ -77,53 +77,58 @@ export default function TodoModal({
   }
 
   return (
-    <Modal visible={visible} onRequestClose={handleCancel} animationType="slide" transparent>
-      <View style={styles.background}>
-        <View style={styles.modal}>
-          <TextInput
-            placeholder="Title"
-            value={title}
-            onChangeText={setTitle}
-            style={styles.input}
-            placeholderTextColor={theme.textTertiary}
-          />
-          <TextInput
-            placeholder="Description"
-            value={description}
-            onChangeText={setDescription}
-            style={[styles.input, styles.inputMultiline]}
-            multiline
-            placeholderTextColor={theme.textTertiary}
-          />
+    <BaseModal
+      visible={visible}
+      onClose={handleCancel}
+      title={initial ? 'Editar Tarefa' : 'Nova Tarefa'}
+      primaryButton={{
+        label: initial ? 'Salvar' : 'Adicionar',
+        onPress: handleSave,
+        disabled: !title.trim(),
+      }}
+      secondaryButton={{
+        label: 'Cancelar',
+        onPress: handleCancel,
+      }}>
+      <View>
+        <TextInput
+          placeholder="Título da tarefa"
+          value={title}
+          onChangeText={setTitle}
+          style={styles.input}
+          placeholderTextColor={theme.textTertiary}
+        />
+        
+        <TextInput
+          placeholder="Adicione uma descrição (opcional)"
+          value={description}
+          onChangeText={setDescription}
+          style={[styles.input, styles.inputMultiline]}
+          multiline
+          numberOfLines={4}
+          placeholderTextColor={theme.textTertiary}
+        />
 
-          <LabelPicker
-            labels={labels}
-            selectedLabelId={labelId}
-            onSelectLabel={setLabelId}
-          />
-          
-          <DateTimePickerField 
-            value={dueInitial} 
-            onChange={setDueInitial} 
-            placeholder="Início Previsto (Opcional)"
-          />
-          
-          <DateTimePickerField 
-            value={dueAt} 
-            onChange={setDueAt} 
-            placeholder="Término Previsto (Define o Prazo)"
-          />
-
-          <View style={styles.actions}>
-            <View style={styles.btn}>
-              <Button title={initial ? 'Save' : 'Add'} onPress={handleSave} color={colors.primary} />
-            </View>
-            <View style={styles.btn}>
-              <Button title="Cancel" onPress={handleCancel} color={theme.error} />
-            </View>
-          </View>
-        </View>
+        <LabelPicker
+          labels={labels}
+          selectedLabelId={labelId}
+          onSelectLabel={setLabelId}
+        />
+        
+        <Text style={styles.sectionLabel}>Datas</Text>
+        
+        <DateTimePickerField 
+          value={dueInitial} 
+          onChange={setDueInitial} 
+          placeholder="Início Previsto (Opcional)"
+        />
+        
+        <DateTimePickerField 
+          value={dueAt} 
+          onChange={setDueAt} 
+          placeholder="Prazo Final (Define notificações)"
+        />
       </View>
-    </Modal>
+    </BaseModal>
   );
 }

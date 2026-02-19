@@ -17,7 +17,19 @@ PushNotification.configure({
     console.log('[PushNotification] onNotification', notification);
   },
   popInitialNotification: true,
-  requestPermissions: false,
+  requestPermissions: Platform.OS === 'ios',
 });
+
+PushNotification.createChannel(
+  {
+    channelId: "completion-channel",
+    channelName: "Tarefas",
+    channelDescription: "Lembretes de tarefas concluídas",
+    soundName: "default",
+    importance: 4,
+    vibrate: true,
+  },
+  (created) => console.log(`[index.js] createChannel returned '${created}'`)
+);
 
 AppRegistry.registerComponent(appName, () => App);

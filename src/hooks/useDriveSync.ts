@@ -1,272 +1,209 @@
-import { useCallback, useEffect, useState } from 'react';
-import { AppState, AppStateStatus } from 'react-native';
-import { DriveUser, Label, SyncStatus, Todo } from '../types';
-import {
-  configureGoogleSignIn,
-  getCurrentUser,
-  signIn as driveSignIn,
-  signOut as driveSignOut,
-} from '../services/drive/auth';
-import { syncLabel, downloadSharedLabel } from '../services/drive/sync';
+import { useCallback } from 'react';
+import { Label, Todo } from '../types';
+import { useAccountManagement } from './useAccountManagement';
+import { useLabelSync } from './useLabelSync';
+import { useLabelOperations } from './useLabelOperations';
+import { useNotification } from './useNotification.shared';
+import { restoreFromDrive, mergeWithDrive } from '../services/drive/sync';
 import { StorageService } from '../services/storage';
+import { cleanLabelsForMerge } from './useDriveSync.helpers';
 
+/**
+ * Hook principal que orquestra autenticação, sincronização e operações de labels
+ * Compõe hooks especializados e adiciona lógica de resolução de conflitos
+ */
 export const useDriveSync = (
   labels: Label[],
   getTodosByLabel: (labelId: string) => Todo[],
   updateLabel: (labelId: string, updates: Partial<Label>) => void,
-  updateTodos: (todos: Todo[]) => void,
-  importLabel: (label: Label) => string
+  updateTodos: (todos: Todo[], labelId?: string) => void,
+  importLabel: (label: Label) => string,
+  setLabels: (labels: Label[]) => void,
 ) => {
-  const [user, setUser] = useState<DriveUser | null>(null);
-  const [syncStatus, setSyncStatus] = useState<SyncStatus>({
-    status: 'idle',
-  });
-  const [syncingLabels, setSyncingLabels] = useState<Set<string>>(new Set());
+  // Hook de notificações compartilhado
+  const { notification, showSuccess, showError, clearNotification } = useNotification();
 
-  // Configura Google Sign-In na montagem
-  useEffect(() => {
-    configureGoogleSignIn();
-    
-    // Verifica se já está logado
-    const checkUser = async () => {
-      console.log('[useDriveSync] Verificando usuário...');
+  // Hook de gerenciamento de conta (apenas auth)
+  const accountManagement = useAccountManagement();
+
+  // Hook de sincronização de labels
+  const labelSync = useLabelSync(
+    accountManagement.user,
+    labels,
+    getTodosByLabel,
+    updateLabel,
+    updateTodos,
+    importLabel
+  );
+
+  // Hook de operações com labels
+  const labelOperations = useLabelOperations(
+    accountManagement.user,
+    labels,
+    importLabel,
+    updateTodos,
+    setLabels,
+    showError, // Callback para mostrar erros
+  );
+
+  /**
+   * Resolve conflito de conta: Merge (Compara datas e mantém dados mais recentes)
+   */
+  const resolveConflictMerge = useCallback(async () => {
+    const conflict = accountManagement.accountConflict;
+    if (!conflict) return;
+
+    try {
+      console.log('[useDriveSync] Resolvendo conflito: Merge');
+
+      // 1. Atualiza usuário atual primeiro
+      await accountManagement.setAuthenticatedUser(conflict.pendingUser);
+
+      // 2. Faz merge comparando datas (mantém os mais recentes)
+      const mergeResult = await mergeWithDrive(labels, getTodosByLabel ? Object.values(labels).flatMap(l => getTodosByLabel(l.id)) : []);
       
-      // Primeiro tenta carregar do AsyncStorage (mais rápido)
-      const cachedUser = await StorageService.loadDriveUser();
-      if (cachedUser) {
-        console.log('[useDriveSync] Usuário em cache:', cachedUser.email);
-        setUser(cachedUser);
-      }
-      
-      // Depois verifica com o Google (valida sessão)
-      const currentUser = await getCurrentUser();
-      if (currentUser) {
-        console.log('[useDriveSync] Usuário autenticado:', currentUser.email);
-        setUser(currentUser);
-        await StorageService.saveDriveUser(currentUser);
-      } else if (cachedUser) {
-        // Se tinha em cache mas getCurrentUser falhou, sessão expirou
-        console.log('[useDriveSync] Sessão expirou, limpando cache');
-        setUser(null);
-        await StorageService.saveDriveUser(null);
+      if (mergeResult) {
+        console.log('[useDriveSync] Merge concluído. Atualizando estado...');
+        
+        // 3. Limpa metadata para forçar upload dos dados mergeados
+        const cleanLabels = cleanLabelsForMerge(mergeResult.labels);
+        setLabels(cleanLabels);
+        updateTodos(mergeResult.todos);
+        
+        // 4. Persistir
+        await StorageService.saveLabels(cleanLabels);
+        await StorageService.saveTodos(mergeResult.todos);
+        
+        // 5. Limpar conflito
+        accountManagement.clearConflict();
+        showSuccess('Dados mesclados com sucesso. Sincronização preparada.');
       } else {
-        console.log('[useDriveSync] Nenhum usuário logado');
+        showError('Não foi possível fazer o merge. Tente novamente.');
       }
-    };
-    checkUser();
-  }, []);
-
-  // Auto-sync quando app volta ao foreground
-  useEffect(() => {
-    const handleAppStateChange = (nextAppState: AppStateStatus) => {
-      if (nextAppState === 'active' && user) {
-        syncAll();
-      }
-    };
-
-    const subscription = AppState.addEventListener(
-      'change',
-      handleAppStateChange
-    );
-
-    return () => {
-      subscription.remove();
-    };
-  }, [user, labels, syncAll]);
-
-  /**
-   * Faz login com Google
-   */
-  const signIn = useCallback(async (): Promise<boolean> => {
-    try {
-      const result = await driveSignIn();
-      if (result) {
-        setUser(result);
-        await StorageService.saveDriveUser(result);
-        return true;
-      }
-      return false;
     } catch (error) {
-      console.error('Sign in error:', error);
-      return false;
+      console.error('Merge error:', error);
+      showError('Erro ao mesclar dados');
     }
-  }, []);
+  }, [accountManagement, labels, getTodosByLabel, setLabels, updateTodos, showSuccess, showError]);
 
   /**
-   * Faz logout
+   * Resolve conflito de conta: Restore (Limpa dados locais e baixa tudo do Drive)
    */
-  const signOut = useCallback(async () => {
+  const resolveConflictRestore = useCallback(async () => {
+    const conflict = accountManagement.accountConflict;
+    if (!conflict) return;
+
     try {
-      await driveSignOut();
-      setUser(null);
-      await StorageService.saveDriveUser(null);
+      console.log('[useDriveSync] Resolvendo conflito: Restore');
+
+      // 1. Seta usuário antes de chamar API
+      await accountManagement.setAuthenticatedUser(conflict.pendingUser);
+
+      // 2. Limpa TODOS os dados locais (exceto login que já foi setado acima)
+      console.log('[useDriveSync] Limpando dados locais...');
+      setLabels([]);
+      updateTodos([]);
+      await StorageService.saveLabels([]);
+      await StorageService.saveTodos([]);
+
+      // 3. Chama restoreFromDrive para baixar tudo
+      const restoreResult = await restoreFromDrive();
+      
+      if (restoreResult) {
+        console.log('[useDriveSync] Restore concluído. Atualizando estado...');
+        // 4. Substitui dados locais com dados do Drive
+        setLabels(restoreResult.labels);
+        updateTodos(restoreResult.todos);
+        
+        await StorageService.saveLabels(restoreResult.labels);
+        await StorageService.saveTodos(restoreResult.todos);
+        
+        // 5. Limpar conflito
+        accountManagement.clearConflict();
+        showSuccess('Dados restaurados da nova conta.');
+      } else {
+        showError('Não foi possível restaurar os dados. Tente novamente.');
+      }
+
     } catch (error) {
-      console.error('Sign out error:', error);
+      console.error('Restore error:', error);
+      showError('Erro na restauração');
     }
-  }, []);
+  }, [accountManagement, setLabels, updateTodos, showSuccess, showError]);
 
   /**
-   * Sincroniza um label específico
+   * Cancela o sign-in e limpa o conflito
    */
-  const syncLabelNow = useCallback(
-    async (labelId: string): Promise<boolean> => {
-      if (!user) {
-        console.warn('User not authenticated');
-        return false;
-      }
+  const cancelSignIn = useCallback(async () => {
+    await accountManagement.signOut();
+    accountManagement.clearConflict();
+  }, [accountManagement]);
 
-      // Previne sincronização simultânea do mesmo label
-      if (syncingLabels.has(labelId)) {
-        console.log('[useDriveSync] Label já está sendo sincronizado:', labelId);
-        return false;
-      }
-
-      const label = labels.find(l => l.id === labelId);
-      if (!label) {
-        console.error('Label not found:', labelId);
-        return false;
-      }
-
-      try {
-        setSyncingLabels(prev => new Set(prev).add(labelId));
-        setSyncStatus({ status: 'syncing' });
-
-        const todos = getTodosByLabel(labelId);
-        const result = await syncLabel(label, todos);
-
-        if (result) {
-          // Atualiza label com nova driveMetadata
-          updateLabel(labelId, {
-            driveMetadata: result.label.driveMetadata,
-          });
-
-          // Se houve mudanças nos todos, atualiza apenas os deste label
-          if (result.changed) {
-            updateTodos(result.todos, labelId);
+  /**
+   * Faz logout e corta todos os compartilhamentos
+   */
+  const signOutWithCleanup = useCallback(async () => {
+    try {
+      console.log('[useDriveSync] Fazendo logout e limpando compartilhamentos...');
+      
+      // 1. Remove labels compartilhados (onde sou collaborator)
+      // 2. Limpa flags de sharing dos labels próprios
+      const cleanedLabels = labels
+        .filter(label => {
+          // Remove labels onde sou apenas colaborador
+          if (label.ownershipRole === 'collaborator') {
+            console.log(`[useDriveSync] Removendo label compartilhado: ${label.name}`);
+            return false;
           }
-
-          setSyncStatus({
-            status: 'idle',
-            lastSyncAt: Date.now(),
-          });
-
           return true;
-        } else {
-          setSyncStatus({
-            status: 'error',
-            error: 'Falha na sincronização',
-          });
-          return false;
-        }
-      } catch (error: any) {
-        console.error('Sync label error:', error);
-        setSyncStatus({
-          status: 'error',
-          error: error.message || 'Erro desconhecido',
-        });
-        return false;
-      } finally {
-        setSyncingLabels(prev => {
-          const next = new Set(prev);
-          next.delete(labelId);
-          return next;
-        });
+        })
+        .map(label => ({
+          ...label,
+          shared: false, // Limpa flag de compartilhamento
+          ownershipRole: undefined, // Remove role
+        }));
+      
+      // Atualiza estado e persiste
+      if (cleanedLabels.length !== labels.length || labels.some(l => l.shared)) {
+        console.log(`[useDriveSync] Labels após limpeza: ${cleanedLabels.length} (antes: ${labels.length})`);
+        setLabels(cleanedLabels);
+        await StorageService.saveLabels(cleanedLabels);
       }
-    },
-    [user, labels, getTodosByLabel, updateLabel, updateTodos, syncingLabels]
-  );
-
-  /**
-   * Sincroniza todos os labels
-   */
-  const syncAll = useCallback(async () => {
-    if (!user) {
-      return;
+      
+      // 3. Faz logout
+      await accountManagement.signOut();
+      
+      showSuccess('Logout realizado. Compartilhamentos removidos.');
+    } catch (error) {
+      console.error('Sign out with cleanup error:', error);
+      showError('Erro ao fazer logout');
     }
+  }, [accountManagement, labels, setLabels, showSuccess, showError]);
 
-    setSyncStatus({ status: 'syncing' });
-
-    try {
-      for (const label of labels) {
-        await syncLabelNow(label.id);
-      }
-
-      setSyncStatus({
-        status: 'idle',
-        lastSyncAt: Date.now(),
-      });
-    } catch (error: any) {
-      console.error('Sync all error:', error);
-      setSyncStatus({
-        status: 'error',
-        error: error.message || 'Erro ao sincronizar',
-      });
-    }
-  }, [user, labels, syncLabelNow]);
-
-  /**
-   * Importa um label compartilhado
-   */
-  const importSharedLabel = useCallback(
-    async (
-      folderId: string,
-      labelName: string
-    ): Promise<{ labelId: string; todos: Todo[] } | null> => {
-      if (!user) {
-        console.warn('User not authenticated');
-        return null;
-      }
-
-      try {
-        setSyncStatus({ status: 'syncing' });
-
-        const data = await downloadSharedLabel(folderId);
-        if (!data) {
-          throw new Error('Falha ao baixar label compartilhado');
-        }
-
-        // Atualiza o nome do label com o que veio do link
-        const labelToImport: Label = {
-          ...data.label,
-          name: labelName,
-          shared: true,
-          driveMetadata: {
-            folderId,
-            fileId: '', // Será preenchido no próximo sync
-            modifiedTime: new Date().toISOString(),
-          },
-        };
-
-        const labelId = importLabel(labelToImport);
-
-        setSyncStatus({
-          status: 'idle',
-          lastSyncAt: Date.now(),
-        });
-
-        return {
-          labelId,
-          todos: data.todos,
-        };
-      } catch (error: any) {
-        console.error('Import shared label error:', error);
-        setSyncStatus({
-          status: 'error',
-          error: error.message || 'Erro ao importar label',
-        });
-        return null;
-      }
-    },
-    [user, importLabel]
-  );
-
+  // Retorna API unificada (compatível com código existente)
   return {
-    user,
-    syncStatus,
-    signIn,
-    signOut,
-    syncLabelNow,
-    syncAll,
-    importSharedLabel,
+    // Account management
+    user: accountManagement.user,
+    accountConflict: accountManagement.accountConflict,
+    signIn: accountManagement.signIn,
+    signOut: signOutWithCleanup, // Wrapper que limpa compartilhamentos antes de logout
+    resolveConflictMerge,
+    resolveConflictRestore,
+    cancelSignIn,
+    
+    // Label sync
+    syncStatus: labelSync.syncStatus,
+    syncLabelNow: labelSync.syncLabelNow,
+    syncAll: labelSync.syncAll,
+    
+    // Label operations
+    importSharedLabel: labelOperations.importSharedLabel,
+    markLabelDeleted: labelOperations.markLabelDeleted,
+    restoreLabel: labelOperations.restoreLabel,
+    leaveSharedLabel: labelOperations.leaveSharedLabel,
+    
+    // Notifications (centralized)
+    notification,
+    clearNotification,
   };
 };

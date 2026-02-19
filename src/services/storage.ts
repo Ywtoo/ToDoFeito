@@ -4,7 +4,9 @@ import { Todo, Label, DriveUser } from '../types';
 const TODOS_KEY = '@todos_v1';
 const LABELS_KEY = '@labels_v1';
 const DRIVE_USER_KEY = '@drive_user_v1';
-const DEFAULT_LABEL_ID = 'default-label';
+const LAST_SYNC_KEY = '@last_sync_v1';
+const LAST_SYNCED_EMAIL_KEY = '@last_synced_email_v1';
+export const DEFAULT_LABEL_ID = 'default-label';
 
 export class StorageService {
   static async loadTodos(): Promise<Todo[]> {
@@ -92,6 +94,65 @@ export class StorageService {
     } catch (e) {
       console.warn('[StorageService] Erro ao carregar drive user:', e);
       return null;
+    }
+  }
+
+  /**
+   * Salva timestamp da última sincronização
+   */
+  static async saveLastSync(timestamp: number): Promise<void> {
+    try {
+      await AsyncStorage.setItem(LAST_SYNC_KEY, timestamp.toString());
+    } catch (e) {
+      console.warn('[StorageService] Erro ao salvar last sync:', e);
+    }
+  }
+
+  /**
+   * Carrega timestamp da última sincronização
+   */
+  static async loadLastSync(): Promise<number | null> {
+    try {
+      const value = await AsyncStorage.getItem(LAST_SYNC_KEY);
+      if (!value) return null;
+      return parseInt(value, 10);
+    } catch (e) {
+      console.warn('[StorageService] Erro ao carregar last sync:', e);
+      return null;
+    }
+  }
+
+  /**
+   * Salva o email da última conta sincronizada com sucesso
+   */
+  static async saveLastSyncedEmail(email: string): Promise<void> {
+    try {
+      await AsyncStorage.setItem(LAST_SYNCED_EMAIL_KEY, email);
+    } catch (e) {
+      console.warn('[StorageService] Erro ao salvar last synced email:', e);
+    }
+  }
+
+  /**
+   * Carrega o email da última conta sincronizada com sucesso
+   */
+  static async loadLastSyncedEmail(): Promise<string | null> {
+    try {
+      return await AsyncStorage.getItem(LAST_SYNCED_EMAIL_KEY);
+    } catch (e) {
+      console.warn('[StorageService] Erro ao carregar last synced email:', e);
+      return null;
+    }
+  }
+
+  /**
+   * Remove o email da última conta sincronizada
+   */
+  static async clearLastSyncedEmail(): Promise<void> {
+    try {
+      await AsyncStorage.removeItem(LAST_SYNCED_EMAIL_KEY);
+    } catch (e) {
+      console.warn('[StorageService] Erro ao limpar last synced email:', e);
     }
   }
 }

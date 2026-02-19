@@ -1,12 +1,15 @@
 {
   "name": "todofeito",
-  "version": "0.5.3",
+  "version": "0.7.1",
   "private": true,
   "scripts": {
     "android": "react-native run-android",
     "ios": "react-native run-ios",
     "lint": "eslint .",
+    "rev": "adb reverse tcp:8081 tcp:8081",
+    "ver": "npx react-native-version",
     "start": "react-native start",
+    "android:dev": "npm run ver -- --target android && npm run rev && npm run android",
     "test": "jest"
   },
   "dependencies": {

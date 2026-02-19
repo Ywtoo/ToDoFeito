@@ -20,11 +20,14 @@ export const colors = {
     ripple: 'rgba(59, 130, 246, 0.12)',
     
     // Estados
+    primary: '#3B82F6',
     success: '#10B981', // Verde moderno
     error: '#EF4444', // Vermelho vibrante
     warning: '#F59E0B', // Laranja âmbar
     disabled: '#F1F5F9',
     disabledText: '#94A3B8',
+    // Cor para usar em cima de elementos `primary`
+    onPrimary: '#FFFFFF',
   },
   
   // Tema escuro
@@ -42,11 +45,14 @@ export const colors = {
     ripple: 'rgba(96, 165, 250, 0.18)',
     
     // Estados
+    primary: '#60A5FA',
     success: '#34D399',
     error: '#F87171',
     warning: '#FBBF24',
     disabled: '#334155',
     disabledText: '#64748B',
+    // Cor para usar em cima de elementos `primary`
+    onPrimary: '#FFFFFF',
   },
 };
 

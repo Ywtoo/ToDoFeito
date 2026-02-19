@@ -18,18 +18,24 @@ import {
 } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
+import { SyncProvider } from './src/contexts/SyncContext';
+import { SyncProgressIndicator } from './src/components/SyncProgressIndicator';
+import { LabelsProvider, useLabelsContext } from './src/contexts/LabelsContext';
 import AppNavigator from './src/navigation';
-import { useLabels } from './src/hooks/useLabels';
 import { useTodos } from './src/hooks/useTodos';
 import { useDriveSync } from './src/hooks/useDriveSync';
 import { parseImportLink } from './src/services/drive/share';
 import { scheduleNotificationFor, scheduleVerificationCycle } from './src/services/notification';
+import AccountConflictModal from './src/components/AccountConflictModal';
+import { useNotifications } from './src/hooks/useNotifications';
 
 function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <AppContent />
+        <LabelsProvider>
+          <AppContent />
+        </LabelsProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );
@@ -37,32 +43,60 @@ function App() {
 
 function AppContent() {
   const { isDark, theme } = useTheme();
-  const labelsHook = useLabels();
-  const { labels, getDefaultLabel, importLabel, updateLabel } = labelsHook;
+  // Hook de notificações para garantir permissões e canal
+  useNotifications();
+
+  // Agora usamos o contexto em vez do hook diretamente
+  const labelsHook = useLabelsContext();
+  const { labels, getDefaultLabel, importLabel, updateLabel, replaceAllLabels } = labelsHook;
   
   const defaultLabel = getDefaultLabel();
   const todosHook = useTodos(defaultLabel.id);
-  const {
-    todos,
-    add,
-    toggle,
-    remove,
-    updateFields,
-    getTodosByLabel,
-    moveTodoToLabel,
-    updateTodos,
-    addTodos,
-  } = todosHook;
+  const { getTodosByLabel, updateTodos, addTodos } = todosHook;
 
   const driveSync = useDriveSync(
     labels,
     getTodosByLabel,
     updateLabel,
     updateTodos,
-    importLabel
+    importLabel,
+    replaceAllLabels
   );
 
-  const { user, syncStatus, importSharedLabel } = driveSync;
+  const { 
+    user, 
+    importSharedLabel,
+    accountConflict,
+    resolveConflictMerge,
+    resolveConflictRestore,
+    cancelSignIn,
+    syncAll,
+  } = driveSync;
+
+  // Auto-sync quando usuário fizer login
+  const [lastSyncedUser, setLastSyncedUser] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user && user.email !== lastSyncedUser && !accountConflict) {
+      console.log('[App] ✨ Usuário logado, fazendo auto-sync...', user.email);
+      setLastSyncedUser(user.email);
+      // Delay pequeno para garantir que UI esteja pronta
+      setTimeout(() => {
+        syncAll().catch(err => {
+          console.error('[App] Erro no auto-sync:', err);
+        });
+      }, 500);
+    } else if (!user) {
+      setLastSyncedUser(null);
+    }
+  }, [user, accountConflict, lastSyncedUser, syncAll]);
+
+  // Debug: Log quando há conflito
+  useEffect(() => {
+    if (accountConflict) {
+      console.log('[App] 🚨 CONFLITO DE CONTA DETECTADO!', accountConflict);
+    }
+  }, [accountConflict]);
 
   // Deep link handler state
   const [importModalVisible, setImportModalVisible] = useState(false);
@@ -75,15 +109,21 @@ function AppContent() {
   // Deep link handler
   useEffect(() => {
     const handleUrl = async ({ url }: { url: string }) => {
+      console.log('[App] Deep link recebido:', url);
       const parsed = parseImportLink(url);
+      console.log('[App] Deep link parseado:', parsed);
       if (parsed) {
+        console.log('[App] Abrindo modal de importação:', parsed);
         setImportData(parsed);
         setImportModalVisible(true);
+      } else {
+        console.log('[App] Deep link não reconhecido ou inválido');
       }
     };
 
     // Check initial URL (app opened via link)
     Linking.getInitialURL().then(url => {
+      console.log('[App] Initial URL:', url);
       if (url) {
         handleUrl({ url });
       }
@@ -98,6 +138,7 @@ function AppContent() {
   }, []);
 
   const handleImport = async () => {
+    console.log('[App] handleImport chamado, importData:', importData);
     if (!importData) return;
 
     setImporting(true);
@@ -105,6 +146,7 @@ function AppContent() {
     try {
       // Check if user is signed in
       if (!user) {
+        console.log('[App] Usuário não está logado, mostrando alerta');
         Alert.alert(
           'Login necessário',
           'Você precisa fazer login com o Google para importar labels compartilhados. Deseja fazer login agora?',
@@ -112,17 +154,17 @@ function AppContent() {
             { text: 'Cancelar', style: 'cancel' },
             {
               text: 'Login',
-              onPress: async () => {
-                const success = await driveSync.signIn();
-                if (success) {
-                  // Retry import after login
-                  await performImport();
-                } else {
-                  Alert.alert('Erro', 'Falha ao fazer login');
-                  setImporting(false);
-                  setImportModalVisible(false);
-                }
-              },
+                onPress: async () => {
+                  const success = await driveSync.signIn();
+                  if (success) {
+                    // Retry import after login
+                    await performImport();
+                  } else {
+                    Alert.alert('Erro', 'Falha ao fazer login');
+                    setImporting(false);
+                    setImportModalVisible(false);
+                  }
+                },
             },
           ]
         );
@@ -130,9 +172,10 @@ function AppContent() {
         return;
       }
 
+      console.log('[App] Usuário está logado, iniciando importação');
       await performImport();
     } catch (error) {
-      console.error('Import error:', error);
+      console.error('[App] Erro na importação:', error);
       Alert.alert('Erro', 'Falha ao importar label compartilhado');
       setImporting(false);
       setImportModalVisible(false);
@@ -140,6 +183,7 @@ function AppContent() {
   };
 
   const performImport = async () => {
+    console.log('[App] performImport iniciado');
     if (!importData) return;
 
     const result = await importSharedLabel(
@@ -148,6 +192,7 @@ function AppContent() {
     );
 
     if (result) {
+      console.log('[App] ✓ Label importado! Adicionando', result.todos.length, 'todos');
       // Add imported todos
       addTodos(result.todos);
 
@@ -168,7 +213,9 @@ function AppContent() {
         `Label "${importData.labelName}" importado com ${result.todos.length} tarefa(s)`
       );
     } else {
-      Alert.alert('Erro', 'Falha ao importar label');
+      // Verifica se há erro específico no status
+      const errorMsg = driveSync.syncStatus.error || 'Falha ao importar label. Verifique se o link está correto e se o compartilhamento está ativo.';
+      Alert.alert('Erro ao importar', errorMsg);
     }
 
     setImporting(false);
@@ -182,18 +229,21 @@ function AppContent() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <StatusBar
-        barStyle={isDark ? 'light-content' : 'dark-content'}
-        backgroundColor={theme.background}
-      />
-      <AppNavigator
-        labelsHook={labelsHook}
-        todosHook={todosHook}
-        driveSync={driveSync}
-      />
+    <SyncProvider value={driveSync}>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <StatusBar
+          barStyle={isDark ? 'light-content' : 'dark-content'}
+          backgroundColor={theme.background}
+        />
+        <AppNavigator
+          todosHook={todosHook}
+          driveSync={driveSync}
+        />
+        
+        {/* Indicador Global de Progresso de Sync */}
+        <SyncProgressIndicator />
 
-      {/* Import Modal */}
+        {/* Import Modal */}
       <Modal
         visible={importModalVisible}
         transparent
@@ -203,12 +253,12 @@ function AppContent() {
           <View
             style={[
               styles.modalContent,
-              { backgroundColor: theme.cardBackground },
+              { backgroundColor: theme.surface },
             ]}>
             <Text style={[styles.modalTitle, { color: theme.text }]}>
               Importar Label Compartilhado
             </Text>
-            <Text style={[styles.modalMessage, { color: theme.subText }]}>
+            <Text style={[styles.modalMessage, { color: theme.textSecondary }]}>
               Deseja importar o label "{importData?.labelName}"?
             </Text>
             {importing ? (
@@ -233,7 +283,25 @@ function AppContent() {
           </View>
         </View>
       </Modal>
-    </View>
+      {/* Account conflict modal (global) */}
+      <AccountConflictModal
+        visible={!!accountConflict}
+        conflict={accountConflict}
+        onMerge={() => {
+          console.log('[App] 🔵 onMerge chamado no App.tsx');
+          resolveConflictMerge();
+        }}
+        onRestore={() => {
+          console.log('[App] 🔴 onRestore chamado no App.tsx');
+          resolveConflictRestore();
+        }}
+        onCancel={() => {
+          console.log('[App] ⚫ onCancel chamado no App.tsx');
+          cancelSignIn();
+        }}
+      />
+      </View>
+    </SyncProvider>
   );
 }
 

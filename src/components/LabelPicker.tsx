@@ -3,11 +3,11 @@ import {
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
   ScrollView,
 } from 'react-native';
 import { Label } from '../types';
 import { useTheme } from '../contexts/ThemeContext';
+import { createLabelPickerStyles, getLabelChipStyle, getLabelTextStyle } from '../styles/LabelPicker.style';
 
 interface LabelPickerProps {
   labels: Label[];
@@ -21,10 +21,11 @@ export const LabelPicker: React.FC<LabelPickerProps> = ({
   onSelectLabel,
 }) => {
   const { theme } = useTheme();
+  const styles = React.useMemo(() => createLabelPickerStyles(theme), [theme]);
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.title, { color: theme.text }]}>Label</Text>
+      <Text style={styles.title}>Label</Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -35,24 +36,9 @@ export const LabelPicker: React.FC<LabelPickerProps> = ({
           return (
             <TouchableOpacity
               key={label.id}
-              style={[
-                styles.labelChip,
-                {
-                  backgroundColor: isSelected
-                    ? label.color
-                    : theme.cardBackground,
-                  borderColor: label.color,
-                  borderWidth: 1,
-                },
-              ]}
+              style={[styles.labelChip, getLabelChipStyle(theme, label.color, isSelected)]}
               onPress={() => onSelectLabel(label.id)}>
-              <Text
-                style={[
-                  styles.labelText,
-                  {
-                    color: isSelected ? '#FFFFFF' : theme.text,
-                  },
-                ]}>
+              <Text style={[styles.labelText, getLabelTextStyle(theme, isSelected)]}>
                 {label.name}
               </Text>
             </TouchableOpacity>
@@ -63,30 +49,4 @@ export const LabelPicker: React.FC<LabelPickerProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    marginVertical: 12,
-  },
-  title: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  scroll: {
-    flexGrow: 0,
-  },
-  scrollContent: {
-    gap: 8,
-    paddingHorizontal: 2,
-  },
-  labelChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 8,
-  },
-  labelText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-});
+// Styles are provided by createLabelPickerStyles in ../styles/LabelPicker.style.ts

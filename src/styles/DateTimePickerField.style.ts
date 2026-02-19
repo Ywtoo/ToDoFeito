@@ -28,12 +28,12 @@ export const createDateTimeStyles = (theme: Theme) => StyleSheet.create({
   },
   // input-like
   inputContainer: {
-    backgroundColor: theme.surfaceVariant,
-    borderRadius: borderRadius.sm + 2,
+    backgroundColor: theme.background,
+    borderRadius: borderRadius.sm,
     paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md + 2,
+    paddingHorizontal: spacing.md,
     borderWidth: 1,
-    borderColor: theme.borderLight,
+    borderColor: theme.border,
     minHeight: 44,
     justifyContent: 'center',
     marginBottom: spacing.md,

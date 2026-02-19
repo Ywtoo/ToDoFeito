@@ -74,7 +74,17 @@ export function useNotifications() {
           );
           const granted = result === PermissionsAndroid.RESULTS.GRANTED;
           setHasPermission(granted);
-          if (!granted) showSettingsAlert();
+          // Apenas alerta se o usuário foi solicitado agora e negou, ou se quisermos ser insistentes.
+          // Para evitar spam na inicialização se já estiver bloqueado (NEVER_ASK_AGAIN),
+          // verificamos se o resultado foi diferent de GRANTED mas não mostramos o alerta automaticamente,
+          // pois o usuario pode ter bloqueado permanentemente.
+          // O ideal é mostrar um banner na UI se !hasPermission.
+          // Mas para manter o comportamento solicitado sem "reverter" ou travar:
+          if (!granted && result !== PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+             // Mostra alerta apenas se negou agora (não permanentemente)
+             // Ou removemos o alerta automático para não irritar o usuário.
+             // Vamos remover o alerta automático e deixar o usuário ativar via settings se quiser.
+          }
         } else {
           setHasPermission(true);
         }
@@ -83,7 +93,7 @@ export function useNotifications() {
       console.warn('Erro ao solicitar permissão de notificações:', e);
       setHasPermission(false);
     }
-  }, [showSettingsAlert]);
+  }, []);
 
   useEffect(() => {
     createChannel();
@@ -93,8 +103,8 @@ export function useNotifications() {
     if (Platform.OS === 'android' && Platform.Version >= 33) {
       if (AlarmPermission) {
         AlarmPermission.checkAlarmPermission()
-          .then((hasPermission: boolean) => {
-            if (!hasPermission) {
+          .then((granted: boolean) => {
+            if (!granted) {
               Alert.alert(
                 'Permissão de Alarme Necessária',
                 'Para que o agendamento funcione o Android exige a permissão "Alarmes e lembretes".\n\nToque em "Configurar", procure pelo app ToDoFeito e ative a chave.',

@@ -2,8 +2,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Icon from 'react-native-vector-icons/Ionicons';
-import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
+import ThemedIcon from '../components/ThemedIcon';
 import Home from '../screens/Home';
 import Settings from '../screens/Settings';
 import { LabelsScreen } from '../screens/Labels';
@@ -13,30 +12,30 @@ import { colors } from '../styles/variables';
 const Tab = createBottomTabNavigator();
 
 function HomeIcon({ color }: { color: string }) {
-  return <Icon name="checkmark-circle-outline" size={24} color={color} />;
+  return <ThemedIcon lib="Ionicons" name="checkmark-circle-outline" size={24} color={color} />;
 }
 
 function LabelsIcon({ color }: { color: string }) {
-  return <MaterialIcon name="label-outline" size={24} color={color} />;
+  return <ThemedIcon lib="MaterialIcons" name="label-outline" size={24} color={color} />;
 }
 
 function SettingsIcon({ color }: { color: string }) {
-  return <Icon name="settings-outline" size={24} color={color} />;
+  return <ThemedIcon lib="Ionicons" name="settings-outline" size={24} color={color} />;
 }
 
 interface AppNavigatorProps {
-  labelsHook: any;
   todosHook: any;
   driveSync: any;
 }
 
 export default function AppNavigator({
-  labelsHook,
   todosHook,
   driveSync,
 }: AppNavigatorProps) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  // labels agora vem do Contexto, não precisa passar como prop
+  // As telas Home e Labels já consomem o contexto diretamente
 
   return (
     <NavigationContainer>
@@ -67,14 +66,13 @@ export default function AppNavigator({
         >
           {() => (
             <Home
-              labels={labelsHook.labels}
               todos={todosHook.todos}
               add={todosHook.add}
               toggle={todosHook.toggle}
               remove={todosHook.remove}
               updateFields={todosHook.updateFields}
               getTodosByLabel={todosHook.getTodosByLabel}
-              getDefaultLabel={labelsHook.getDefaultLabel}
+              syncStatus={driveSync.syncStatus}
             />
           )}
         </Tab.Screen>
@@ -87,13 +85,11 @@ export default function AppNavigator({
         >
           {() => (
             <LabelsScreen
-              labels={labelsHook.labels}
               todos={todosHook.todos}
-              createLabel={labelsHook.createLabel}
-              updateLabel={labelsHook.updateLabel}
-              deleteLabel={labelsHook.deleteLabel}
               syncLabelNow={driveSync.syncLabelNow}
               user={driveSync.user}
+              markLabelDeleted={driveSync.markLabelDeleted}
+              leaveSharedLabel={driveSync.leaveSharedLabel}
             />
           )}
         </Tab.Screen>

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Label } from '../types';
-import { StorageService } from '../services/storage';
+import { StorageService, DEFAULT_LABEL_ID } from '../services/storage';
 
 export const useLabels = () => {
   const [labels, setLabels] = useState<Label[]>([]);
@@ -72,23 +72,76 @@ export const useLabels = () => {
   );
 
   /**
-   * Obtém o label padrão
+   * Garante que existe um label padrão
+   * (Executa apenas uma vez após o carregamento inicial para evitar loops)
+   */
+  useEffect(() => {
+    if (loading) return;
+
+    setLabels(prev => {
+      let defaultLabel = prev.find(l => l.isDefault);
+      
+      // Se não achou por flag, tenta achar pelo ID fixo
+      if (!defaultLabel) {
+        defaultLabel = prev.find(l => l.id === DEFAULT_LABEL_ID);
+        
+        // Se achou pelo ID mas flag estava false, corrige
+        if (defaultLabel) {
+          const fixedLabel = { ...defaultLabel, isDefault: true };
+          return prev.map(l => l.id === DEFAULT_LABEL_ID ? fixedLabel : l);
+        } else {
+          // Se realmente não existe, cria
+          const newDefault = StorageService.createDefaultLabel();
+          // Verifica novamente por segurança se já não existe com ID
+          if (prev.some(l => l.id === DEFAULT_LABEL_ID)) return prev;
+          return [newDefault, ...prev];
+        }
+      }
+      return prev;
+    });
+  }, [loading]);
+
+  /**
+   * Obtém o label padrão (apenas leitura segura)
    */
   const getDefaultLabel = useCallback((): Label => {
-    const defaultLabel = labels.find(l => l.isDefault);
-    if (!defaultLabel) {
-      // Se não existe, cria
-      const newDefault = StorageService.createDefaultLabel();
-      setLabels(prev => [newDefault, ...prev]);
-      return newDefault;
-    }
-    return defaultLabel;
+    return labels.find(l => l.isDefault) || 
+           labels.find(l => l.id === DEFAULT_LABEL_ID) ||
+           StorageService.createDefaultLabel();
   }, [labels]);
 
   /**
    * Adiciona um label importado (de um compartilhamento)
+   * Para label padrão: mescla os todos com o padrão local existente
    */
   const importLabel = useCallback((label: Label) => {
+    // Se for label padrão, retorna o ID do padrão local (não cria novo)
+    if (label.isDefault || label.id === DEFAULT_LABEL_ID) {
+      console.log('[useLabels] Label padrão detectado - usando padrão local');
+      const defaultLabel = labels.find(l => l.isDefault) || labels.find(l => l.id === DEFAULT_LABEL_ID); // Tenta achar por flag OU id
+      
+      if (defaultLabel) {
+        // Garante que está marcado como default se achou pelo ID
+        if (!defaultLabel.isDefault) {
+           updateLabel(defaultLabel.id, { isDefault: true });
+        }
+
+        // Atualiza metadata do padrão local se vier do Drive
+        if (label.driveMetadata) {
+          updateLabel(defaultLabel.id, { driveMetadata: label.driveMetadata });
+        }
+        return defaultLabel.id;
+      }
+      // Se não existe padrão local (não deveria acontecer), cria
+      const newDefault = StorageService.createDefaultLabel();
+      setLabels(prev => {
+         // Check duplicatas
+         if (prev.some(l => l.id === DEFAULT_LABEL_ID)) return prev;
+         return [newDefault, ...prev];
+      });
+      return newDefault.id;
+    }
+    
     // Verifica se já existe um label com esse driveMetadata
     const existing = labels.find(
       l => l.driveMetadata?.folderId === label.driveMetadata?.folderId
@@ -124,6 +177,13 @@ export const useLabels = () => {
     [updateLabel]
   );
 
+  /**
+   * Substitui todos os labels (usado ao restaurar backup)
+   */
+  const replaceAllLabels = useCallback((newLabels: Label[]) => {
+    setLabels(newLabels);
+  }, []);
+
   return {
     labels,
     loading,
@@ -134,5 +194,6 @@ export const useLabels = () => {
     getDefaultLabel,
     importLabel,
     updateDriveMetadata,
+    replaceAllLabels,
   };
 };
