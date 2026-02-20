@@ -1,10 +1,6 @@
 # 🚀 ToDoFeito — Offline-First Task Manager com Sincronização Inteligente
 
 <p align="center">
-  <img src="docs/screenshots/label-shared.png" alt="ToDoFeito Preview" width="750"/>
-</p>
-
-<p align="center">
   <img src="https://img.shields.io/badge/Status-Beta-yellow?style=for-the-badge" />
   <img src="https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" />
   <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" />
@@ -30,10 +26,11 @@
 - [Decisões Técnicas & Trade-offs](#decisões-técnicas--trade-offs)
 - [Tecnologias](#tecnologias)
 
-- [Screenshots](#Screenshots)
+Screenshots/Imagens
+- [Screenshots](#-screenshots)
 
 
-#🇧🇷 Português
+# 🇧🇷 Português
 
 ## 📌 Sobre o Projeto
 
@@ -203,7 +200,7 @@ Durante o desenvolvimento, algumas decisões exigiram equilíbrio entre simplici
 
 ---
 
-#🇺🇸 English
+# 🇺🇸 English
 
 ## 📌 About the Project
 
@@ -377,18 +374,18 @@ Synchronization logic is isolated from UI components, improving maintainability 
 ## 📱 Screenshots
 
 ### 🏠 Tasks Overview
-<img src="docs/screenshots/tasks-light.png" width="250"/>
-<img src="docs/screenshots/tasks-dark.png" width="250"/>
+<img src="docs/screenshots/tasks-light.jpg" width="250"/>
+<img src="docs/screenshots/tasks-dark.jpg" width="250"/>
 
 ### 🏷️ Labels & Sharing
-<img src="docs/screenshots/labels-overview.png" width="250"/>
-<img src="docs/screenshots/label-shared.png" width="250"/>
+<img src="docs/screenshots/labels-overview.jpg" width="250"/>
+<img src="docs/screenshots/label-shared.jpg" width="250"/>
 
 ### 🔄 Sync Feedback
-<img src="docs/screenshots/sync-progress.png" width="250"/>
+<img src="docs/screenshots/sync-progress.jpg" width="250"/>
 
 ### ⚙️ Settings
-<img src="docs/screenshots/settings.png" width="250"/>
+<img src="docs/screenshots/settings.jpg" width="250"/>
 
 
 
