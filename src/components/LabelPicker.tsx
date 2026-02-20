@@ -20,12 +20,11 @@ export const LabelPicker: React.FC<LabelPickerProps> = ({
   selectedLabelId,
   onSelectLabel,
 }) => {
-  const { theme } = useTheme();
-  const styles = React.useMemo(() => createLabelPickerStyles(theme), [theme]);
+  const { theme, fontScale } = useTheme();
+  const styles = React.useMemo(() => createLabelPickerStyles(theme, fontScale), [theme, fontScale]);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Label</Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}

@@ -1,12 +1,12 @@
 import { StyleSheet } from 'react-native';
-import { colors, spacing, borderRadius, shadows, Theme } from './variables';
+import { colors, spacing, borderRadius, shadows, Theme, scaleFont } from './variables';
 
 export type HomeStyleOpts = {
   insetsTop?: number;
   fabBottom?: number;
 };
 
-export const createHomeStyles = (theme: Theme, opts?: HomeStyleOpts) => StyleSheet.create({
+export const createHomeStyles = (theme: Theme, opts?: HomeStyleOpts, fontScale = 1) => StyleSheet.create({
   geral: {
     flex: 1,
     backgroundColor: theme.background,
@@ -40,7 +40,7 @@ export const createHomeStyles = (theme: Theme, opts?: HomeStyleOpts) => StyleShe
   },
 
   labelFilterText: {
-    fontSize: 14,
+    fontSize: scaleFont(14, fontScale),
     fontWeight: '500',
   },
 
@@ -58,7 +58,7 @@ export const createHomeStyles = (theme: Theme, opts?: HomeStyleOpts) => StyleShe
     borderColor: theme.border,
   },
   dropdownButtonText: {
-    fontSize: 16,
+    fontSize: scaleFont(16, fontScale),
     fontWeight: '600',
     color: theme.text,
   },
@@ -100,7 +100,7 @@ export const createHomeStyles = (theme: Theme, opts?: HomeStyleOpts) => StyleShe
     justifyContent: 'space-between',
   },
   dropdownItemText: {
-    fontSize: 15,
+    fontSize: scaleFont(15, fontScale),
     fontWeight: '500',
   },
 
@@ -132,7 +132,7 @@ export const createHomeStyles = (theme: Theme, opts?: HomeStyleOpts) => StyleShe
     marginRight: spacing.sm,
   },
   accordionHeaderText: {
-    fontSize: 16,
+    fontSize: scaleFont(16, fontScale),
     fontWeight: '600',
     flex: 1,
     color: theme.text,
@@ -141,7 +141,7 @@ export const createHomeStyles = (theme: Theme, opts?: HomeStyleOpts) => StyleShe
     marginRight: spacing.sm,
   },
   labelCountText: {
-    fontSize: 14,
+    fontSize: scaleFont(14, fontScale),
     fontWeight: '600',
     color: theme.textTertiary,
     marginLeft: spacing.xs,
@@ -155,7 +155,7 @@ export const createHomeStyles = (theme: Theme, opts?: HomeStyleOpts) => StyleShe
     paddingBottom: spacing.xs,
   },
   todoPreviewText: {
-    fontSize: 14,
+    fontSize: scaleFont(14, fontScale),
     color: theme.textSecondary,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
@@ -206,7 +206,7 @@ export const createHomeStyles = (theme: Theme, opts?: HomeStyleOpts) => StyleShe
 
   fabTestText: {
     color: theme.text,
-    fontSize: 14,
+    fontSize: scaleFont(14, fontScale),
     fontWeight: '600',
   },
 });

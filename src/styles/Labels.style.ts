@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import { spacing, borderRadius, shadows, Theme, colors } from './variables';
+import { spacing, borderRadius, shadows, Theme, colors, scaleFont } from './variables';
 
 export type LabelsStyleOpts = {
   insetsTop?: number;
 };
 
-export const createLabelsStyles = (theme: Theme, opts?: LabelsStyleOpts) => StyleSheet.create({
+export const createLabelsStyles = (theme: Theme, opts?: LabelsStyleOpts, fontScale = 1) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.background,
@@ -56,13 +56,13 @@ export const createLabelsStyles = (theme: Theme, opts?: LabelsStyleOpts) => Styl
     marginLeft: spacing.sm,
   },
   labelName: {
-    fontSize: 16,
+    fontSize: scaleFont(16, fontScale),
     fontWeight: '600',
     color: theme.text,
     flex: 1,
   },
   labelCount: {
-    fontSize: 14,
+    fontSize: scaleFont(14, fontScale),
     color: theme.textTertiary,
     fontWeight: '600',
     marginLeft: spacing.xs,
@@ -83,7 +83,7 @@ export const createLabelsStyles = (theme: Theme, opts?: LabelsStyleOpts) => Styl
     gap: spacing.sm,
   },
   detailText: {
-    fontSize: 14,
+    fontSize: scaleFont(14, fontScale),
     color: theme.textSecondary,
   },
   actionsRow: {
@@ -96,7 +96,7 @@ export const createLabelsStyles = (theme: Theme, opts?: LabelsStyleOpts) => Styl
   emptyText: {
     textAlign: 'center',
     marginTop: spacing.xxl,
-    fontSize: 16,
+    fontSize: scaleFont(16, fontScale),
     color: theme.textSecondary,
   },
   fab: {
@@ -128,7 +128,7 @@ export const createLabelsStyles = (theme: Theme, opts?: LabelsStyleOpts) => Styl
     marginRight: spacing.md,
   },
   previewText: {
-    fontSize: 16,
+    fontSize: scaleFont(16, fontScale),
     fontWeight: '600',
     color: theme.text,
     flex: 1,
@@ -137,14 +137,14 @@ export const createLabelsStyles = (theme: Theme, opts?: LabelsStyleOpts) => Styl
     borderWidth: 1,
     borderRadius: borderRadius.sm,
     padding: spacing.md,
-    fontSize: 16,
+    fontSize: scaleFont(16, fontScale),
     marginBottom: spacing.lg,
     borderColor: theme.border,
     color: theme.text,
     backgroundColor: theme.background,
   },
   colorLabel: {
-    fontSize: 14,
+    fontSize: scaleFont(14, fontScale),
     fontWeight: '600',
     marginBottom: spacing.md,
     color: theme.text,

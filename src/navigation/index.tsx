@@ -7,7 +7,7 @@ import Home from '../screens/Home';
 import Settings from '../screens/Settings';
 import { LabelsScreen } from '../screens/Labels';
 import { useTheme } from '../contexts/ThemeContext';
-import { colors } from '../styles/variables';
+import { colors, scaleFont } from '../styles/variables';
 
 const Tab = createBottomTabNavigator();
 
@@ -32,7 +32,7 @@ export default function AppNavigator({
   todosHook,
   driveSync,
 }: AppNavigatorProps) {
-  const { theme } = useTheme();
+  const { theme, fontScale } = useTheme();
   const insets = useSafeAreaInsets();
   // labels agora vem do Contexto, não precisa passar como prop
   // As telas Home e Labels já consomem o contexto diretamente
@@ -52,7 +52,7 @@ export default function AppNavigator({
           tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: theme.textTertiary,
           tabBarLabelStyle: {
-            fontSize: 12,
+            fontSize: scaleFont(12, fontScale),
             fontWeight: '500',
           },
         }}

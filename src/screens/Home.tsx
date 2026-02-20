@@ -5,7 +5,6 @@ import {
   ScrollView,
   Text,
   TouchableOpacity,
-  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ThemedIcon from '../components/ThemedIcon';
@@ -14,7 +13,7 @@ import { useLabelsContext } from '../contexts/LabelsContext';
 import TodoItem from '../components/TodoItem';
 import TodoModal from '../components/TodoModal';
 import { createHomeStyles, getFabStyle, getColorDotStyle } from '../styles/Home.styles';
-import { Label, Todo, SyncStatus } from '../types';
+import { Todo, SyncStatus } from '../types';
 
 interface HomeProps {
   todos: Todo[];
@@ -33,10 +32,10 @@ export default function Home({
   remove,
   updateFields,
   getTodosByLabel,
-  syncStatus,
+  syncStatus: _syncStatus,
 }: HomeProps) {
   const { labels, getDefaultLabel } = useLabelsContext();
-  const { theme } = useTheme();
+  const { theme, fontScale } = useTheme();
   const insets = useSafeAreaInsets();
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -46,7 +45,7 @@ export default function Home({
   const fabMargin = 16;
   const fabBottom = fabMargin;
 
-  const styles = useMemo(() => createHomeStyles(theme, { insetsTop: insets.top, fabBottom }), [theme, insets.top, fabBottom]);
+  const styles = useMemo(() => createHomeStyles(theme, { insetsTop: insets.top, fabBottom }, fontScale), [theme, insets.top, fabBottom, fontScale]);
   const [selectedLabelId, setSelectedLabelId] = useState<string>(
     getDefaultLabel().id
   );

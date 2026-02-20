@@ -49,9 +49,9 @@ export const LabelsScreen: React.FC<LabelsScreenProps> = ({
   leaveSharedLabel,
 }) => {
   const { labels, createLabel, updateLabel, deleteLabel } = useLabelsContext();
-  const { theme } = useTheme();
+  const { theme, fontScale } = useTheme();
   const insets = useSafeAreaInsets();
-  const styles = useMemo(() => createLabelsStyles(theme, { insetsTop: insets.top }), [theme, insets.top]);
+  const styles = useMemo(() => createLabelsStyles(theme, { insetsTop: insets.top }, fontScale), [theme, insets.top, fontScale]);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingLabel, setEditingLabel] = useState<Label | null>(null);
   const [labelName, setLabelName] = useState('');

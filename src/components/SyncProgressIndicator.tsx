@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Animated, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
+import { scaleFont } from '../styles/variables';
 import { useSyncContext } from '../contexts/SyncContext';
 
 export const SyncProgressIndicator: React.FC = () => {
-  const { theme } = useTheme();
+  const { theme, fontScale } = useTheme();
   const { syncStatus } = useSyncContext();
   const insets = useSafeAreaInsets();
   const [visible, setVisible] = useState(false);
@@ -48,16 +49,16 @@ export const SyncProgressIndicator: React.FC = () => {
     >
       <View style={styles.content}>
         {progress?.message && (
-          <Text style={[styles.statusText, { color: theme.textSecondary }]}>
+          <Text style={[styles.statusText, { color: theme.textSecondary, fontSize: scaleFont(12, fontScale) }]}> 
             {progress.message}
           </Text>
         )}
         {progress && (
-          <Text style={[styles.percentageText, { color: theme.primary }]}>
+          <Text style={[styles.percentageText, { color: theme.primary, fontSize: scaleFont(12, fontScale) }]}> 
             {percentage}%
           </Text>
         )}
-        <ActivityIndicator size="small" color={theme.primary} style={{ marginLeft: 8 }} />
+        <ActivityIndicator size="small" color={theme.primary} style={styles.indicator} />
       </View>
     </Animated.View>
   );
@@ -82,12 +83,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statusText: {
-    fontSize: 12,
     fontWeight: '500',
     marginRight: 4,
   },
   percentageText: {
-    fontSize: 12,
     fontWeight: 'bold',
+  },
+  indicator: {
+    marginLeft: 8,
   },
 });

@@ -7,7 +7,6 @@ import {
   scheduleVerificationCycle,
   scheduleNotificationFor,
   cancelNotificationById,
-  toIdArray,
 } from '../services/notification';
 import { cleanupDeletedTodos, countDeletedTodos } from '../services/cleanup';
 

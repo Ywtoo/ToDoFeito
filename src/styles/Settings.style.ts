@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
-import { spacing, fontSize, borderRadius, shadows, Theme, colors } from './variables';
+import { spacing, fontSize, borderRadius, shadows, Theme, colors, scaleFont } from './variables';
 
-export const createSettingsStyles = (theme: Theme, insetsTop: number) => StyleSheet.create({
+export const createSettingsStyles = (theme: Theme, insetsTop: number, fontScale = 1) => StyleSheet.create({
   scrollContainer: {
     flex: 1,
     backgroundColor: theme.background,
@@ -12,7 +12,7 @@ export const createSettingsStyles = (theme: Theme, insetsTop: number) => StyleSh
     paddingTop: spacing.lg + insetsTop,
   },
   title: { 
-    fontSize: fontSize.xxl + 4, 
+    fontSize: scaleFont(fontSize.xxl + 4, fontScale), 
     fontWeight: '700', 
     marginBottom: spacing.xl,
     color: theme.text,
@@ -25,7 +25,7 @@ export const createSettingsStyles = (theme: Theme, insetsTop: number) => StyleSh
     ...shadows.small,
   },
   sectionTitle: {
-    fontSize: fontSize.sm,
+    fontSize: scaleFont(fontSize.sm, fontScale),
     fontWeight: '600',
     color: theme.textSecondary,
     marginBottom: spacing.md,
@@ -39,12 +39,12 @@ export const createSettingsStyles = (theme: Theme, insetsTop: number) => StyleSh
     paddingVertical: spacing.sm,
   },
   rowLabel: {
-    fontSize: fontSize.base,
+    fontSize: scaleFont(fontSize.base, fontScale),
     fontWeight: '500',
     color: theme.text,
   },
   description: {
-    fontSize: fontSize.sm,
+    fontSize: scaleFont(fontSize.sm, fontScale),
     color: theme.textSecondary,
     marginTop: spacing.md,
     lineHeight: 20,
@@ -66,7 +66,7 @@ export const createSettingsStyles = (theme: Theme, insetsTop: number) => StyleSh
   },
   buttonText: {
     color: theme.onPrimary,
-    fontSize: fontSize.base,
+    fontSize: scaleFont(fontSize.base, fontScale),
     fontWeight: '600',
   },
   userInfo: {
@@ -79,18 +79,79 @@ export const createSettingsStyles = (theme: Theme, insetsTop: number) => StyleSh
     flex: 1,
   },
   userEmail: {
-    fontSize: fontSize.base,
+    fontSize: scaleFont(fontSize.base, fontScale),
     color: theme.text,
     fontWeight: '500',
   },
   syncInfo: {
-    fontSize: fontSize.sm,
+    fontSize: scaleFont(fontSize.sm, fontScale),
     color: theme.textSecondary,
     marginTop: spacing.xs,
   },
   syncError: {
-    fontSize: fontSize.sm,
+    fontSize: scaleFont(fontSize.sm, fontScale),
     color: '#F44336',
     marginTop: spacing.xs,
+  },
+  // Theme / font choices
+  choiceRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  choiceButton: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.sm,
+    borderWidth: 1,
+    borderColor: theme.border,
+    backgroundColor: theme.surfaceVariant,
+    minWidth: 140,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  choiceButtonActive: {
+    borderColor: theme.primary,
+    backgroundColor: theme.primary,
+  },
+  choiceLabel: {
+    fontSize: scaleFont(fontSize.base, fontScale),
+    fontWeight: '600',
+    color: theme.textSecondary,
+  },
+  caret: {
+    marginLeft: spacing.sm,
+    fontSize: scaleFont(fontSize.base, fontScale),
+    color: theme.textSecondary,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: theme.overlay,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  modalContent: {
+    width: '90%',
+    maxWidth: 520,
+    backgroundColor: theme.surface,
+    padding: spacing.lg,
+    borderRadius: borderRadius.md,
+    ...shadows.medium,
+  },
+  modalOption: {
+    marginBottom: spacing.sm,
+  },
+  modalClose: {
+    marginTop: spacing.md,
+  },
+  controlWrap: {
+    flex: 1,
+    marginLeft: spacing.md,
+  },
+  spacerMd: {
+    marginTop: spacing.md,
   },
 });

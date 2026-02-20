@@ -15,8 +15,8 @@ interface Props {
 }
 
 export default function TodoItem({ todo, onToggle, onRemove, onEdit }: Props) {
-  const { theme } = useTheme();
-  const styles = useMemo(() => createTodoItemStyles(theme), [theme]);
+  const { theme, fontScale } = useTheme();
+  const styles = useMemo(() => createTodoItemStyles(theme, fontScale), [theme, fontScale]);
   
   const dueInitialText = formatSituationalDate(todo.dueInitial || null);
   const dueText = formatSituationalDate(todo.dueAt || null);

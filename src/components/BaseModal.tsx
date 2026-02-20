@@ -27,8 +27,8 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   primaryButton,
   secondaryButton,
 }) => {
-  const { theme } = useTheme();
-  const styles = useMemo(() => createBaseModalStyles(theme), [theme]);
+  const { theme, fontScale } = useTheme();
+  const styles = useMemo(() => createBaseModalStyles(theme, fontScale), [theme, fontScale]);
 
   return (
     <Modal

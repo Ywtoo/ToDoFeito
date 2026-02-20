@@ -21,16 +21,7 @@ const CHANNEL_ID = 'completion-channel';
 export function useNotifications() {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
 
-  const showSettingsAlert = useCallback(() => {
-    Alert.alert(
-      'Notificações desativadas',
-      'Para receber lembretes ative as notificações nas configurações do app.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Abrir configurações', onPress: () => Linking.openSettings() },
-      ],
-    );
-  }, []);
+  // helper removed; alert inlined to avoid hook dependency issues
 
   const createChannel = useCallback(() => {
     PushNotification.createChannel(
@@ -57,7 +48,16 @@ export function useNotifications() {
           ((res as any).alert || (res as any).badge || (res as any).sound)
         );
         setHasPermission(granted);
-        if (!granted) showSettingsAlert();
+        if (!granted) {
+          Alert.alert(
+            'Notificações desativadas',
+            'Para receber lembretes ative as notificações nas configurações do app.',
+            [
+              { text: 'Cancelar', style: 'cancel' },
+              { text: 'Abrir configurações', onPress: () => Linking.openSettings() },
+            ],
+          );
+        }
       } else {
         // Android 13+ requer permissão runtime para notificações
         const sdk = Platform.Version as number;

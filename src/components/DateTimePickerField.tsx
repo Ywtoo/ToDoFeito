@@ -13,8 +13,8 @@ interface Props {
 }
 
 export default function DateTimePickerField({ value, onChange, placeholder = 'Selecionar data' }: Props) {
-  const { theme } = useTheme();
-  const styles = useMemo(() => createDateTimeStyles(theme), [theme]);
+  const { theme, fontScale } = useTheme();
+  const styles = useMemo(() => createDateTimeStyles(theme, fontScale), [theme, fontScale]);
   
   const [visible, setVisible] = useState(false);
   const [mode, setMode] = useState<'date' | 'time' | null>(null);

@@ -1,7 +1,7 @@
 import { StyleSheet, Platform } from 'react-native';
-import { colors, spacing, fontSize, borderRadius, shadows, Theme } from './variables';
+import { colors, spacing, fontSize, borderRadius, shadows, Theme, scaleFont } from './variables';
 
-export const createTodoItemStyles = (theme: Theme) => StyleSheet.create({
+export const createTodoItemStyles = (theme: Theme, fontScale = 1) => StyleSheet.create({
   // ===== Layout / Card =====
   card: {
     flexDirection: 'row',
@@ -32,7 +32,7 @@ export const createTodoItemStyles = (theme: Theme) => StyleSheet.create({
   },
   check: {
     color: theme.onPrimary,
-    fontSize: fontSize.base - 2,
+    fontSize: scaleFont(fontSize.base - 2, fontScale),
     fontWeight: '700',
   },
   checkboxPressed: {
@@ -45,7 +45,7 @@ export const createTodoItemStyles = (theme: Theme) => StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
-    fontSize: fontSize.lg,
+    fontSize: scaleFont(fontSize.lg, fontScale),
     fontWeight: '600',
     color: theme.text,
     letterSpacing: -0.3,
@@ -56,7 +56,7 @@ export const createTodoItemStyles = (theme: Theme) => StyleSheet.create({
   },
   description: {
     color: theme.textSecondary,
-    fontSize: fontSize.sm,
+    fontSize: scaleFont(fontSize.sm, fontScale),
     marginTop: spacing.xs - 2,
     lineHeight: 18,
   },
@@ -68,13 +68,13 @@ export const createTodoItemStyles = (theme: Theme) => StyleSheet.create({
     marginLeft: spacing.sm,
   },
   dueDate: {
-    fontSize: fontSize.sm,
+    fontSize: scaleFont(fontSize.sm, fontScale),
     fontWeight: '500',
     color: theme.textSecondary,
     marginBottom: spacing.xs,
   },
   smallDate: {
-    fontSize: fontSize.xs,
+    fontSize: scaleFont(fontSize.xs, fontScale),
     color: theme.textTertiary,
     marginBottom: spacing.xs - 2,
   },

@@ -1,7 +1,7 @@
 import { StyleSheet, Platform } from 'react-native';
-import { colors, spacing, fontSize, borderRadius, Theme } from './variables';
+import { colors, spacing, fontSize, borderRadius, Theme, scaleFont, shadows } from './variables';
 
-export const createDateTimeStyles = (theme: Theme) => StyleSheet.create({
+export const createDateTimeStyles = (theme: Theme, fontScale = 1) => StyleSheet.create({
   modalBackdrop: {
     flex: 1,
     backgroundColor: theme.overlay,
@@ -28,7 +28,7 @@ export const createDateTimeStyles = (theme: Theme) => StyleSheet.create({
   },
   // input-like
   inputContainer: {
-    backgroundColor: theme.background,
+    backgroundColor: theme.surface,
     borderRadius: borderRadius.sm,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
@@ -36,15 +36,15 @@ export const createDateTimeStyles = (theme: Theme) => StyleSheet.create({
     borderColor: theme.border,
     minHeight: 44,
     justifyContent: 'center',
-    marginBottom: spacing.md,
+    ...shadows.small,
   },
   inputText: {
     color: theme.text,
-    fontSize: fontSize.base,
+    fontSize: scaleFont(fontSize.base, fontScale),
   },
   placeholderText: {
     color: theme.textTertiary,
-    fontSize: fontSize.base,
+    fontSize: scaleFont(fontSize.base, fontScale),
   },
   actions: {
     flexDirection: 'row',
@@ -60,7 +60,7 @@ export const createDateTimeStyles = (theme: Theme) => StyleSheet.create({
   actionText: {
     color: colors.primary,
     fontWeight: '600',
-    fontSize: fontSize.base,
+    fontSize: scaleFont(fontSize.base, fontScale),
   },
   cancelText: {
     color: theme.error,

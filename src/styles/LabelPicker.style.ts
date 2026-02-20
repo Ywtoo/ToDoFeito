@@ -1,15 +1,9 @@
 import { StyleSheet } from 'react-native';
-import { spacing, borderRadius, Theme } from './variables';
+import { spacing, borderRadius, Theme, scaleFont } from './variables';
 
-export const createLabelPickerStyles = (theme: Theme) => StyleSheet.create({
+export const createLabelPickerStyles = (theme: Theme, fontScale = 1) => StyleSheet.create({
   container: {
     marginBottom: spacing.md,
-  },
-  title: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: spacing.md,
-    color: theme.text,
   },
   scroll: {
     flexGrow: 0,
@@ -18,14 +12,14 @@ export const createLabelPickerStyles = (theme: Theme) => StyleSheet.create({
     gap: spacing.sm,
   },
   labelChip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md + 2,
+    paddingVertical: spacing.sm + 2,
     borderRadius: borderRadius.round,
     borderWidth: 2,
   },
   labelText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: scaleFont(14, fontScale),
+    fontWeight: '600',
   },
 });
 

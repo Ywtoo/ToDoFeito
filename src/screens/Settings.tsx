@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
-  Switch,
+  Modal,
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
@@ -10,6 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createSettingsStyles } from '../styles/Settings.style';
 import ThemedIcon from '../components/ThemedIcon';
+import UpdateChecker from '../components/UpdateChecker';
 import { useTheme } from '../contexts/ThemeContext';
 import { /* spacing, fontSize, borderRadius, shadows */ } from '../styles/variables';
 import { DriveUser, SyncStatus } from '../types';
@@ -23,7 +24,7 @@ interface SettingsProps {
 }
 
 export default function Settings({ user, syncStatus, signIn, signOut, syncAll }: SettingsProps) {
-  const { theme, isDark, toggleTheme } = useTheme();
+  const { theme, fontScale, setThemeMode, setFontScale, mode } = useTheme();
   const insets = useSafeAreaInsets();
 
   const handleSignIn = async () => {
@@ -56,12 +57,36 @@ export default function Settings({ user, syncStatus, signIn, signOut, syncAll }:
     return date.toLocaleDateString('pt-BR');
   };
 
-  const styles = createSettingsStyles(theme, insets.top);
+  const styles = createSettingsStyles(theme, insets.top, fontScale);
+
+  // Theme options and font size mapping
+  const themeOptions = [
+    { key: 'auto', label: 'Automático' },
+    { key: 'light', label: 'Claro' },
+    { key: 'blue', label: 'Azul' },
+    { key: 'dark', label: 'Escuro' },
+    { key: 'veryDark', label: 'Muito Escuro' },
+    { key: 'sepia', label: 'Sépia' },
+  ];
+
+  const fontOptions = [
+    { key: 0.9, label: 'Pequeno' },
+    { key: 1, label: 'Normal' },
+    { key: 1.15, label: 'Grande' },
+    { key: 1.3, label: 'Muito Grande' },
+  ];
+
+  const [themeModalVisible, setThemeModalVisible] = useState(false);
+  const [fontModalVisible, setFontModalVisible] = useState(false);
+
+  const getThemeLabel = (k: any) => themeOptions.find(t => t.key === k)?.label || String(k);
+  const getFontLabel = (v: number) => fontOptions.find(f => Math.abs(f.key - v) < 0.01)?.label || String(v);
 
   return (
     <ScrollView style={styles.scrollContainer}>
       <View style={styles.container}>
         <Text style={styles.title}>Configurações</Text>
+        <UpdateChecker />
 
         {/* Seção Google Drive */}
         <View style={styles.section}>
@@ -131,15 +156,63 @@ export default function Settings({ user, syncStatus, signIn, signOut, syncAll }:
         {/* Seção Aparência */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>APARÊNCIA</Text>
+
           <View style={styles.row}>
-            <Text style={styles.rowLabel}>Tema Escuro</Text>
-            <Switch value={isDark} onValueChange={toggleTheme} />
+            <Text style={styles.rowLabel}>Tema</Text>
+            <View style={styles.controlWrap}>
+              <TouchableOpacity onPress={() => setThemeModalVisible(true)} style={styles.choiceButton}>
+                <Text style={styles.choiceLabel}>{getThemeLabel(mode)}</Text>
+                <Text style={styles.caret}>▾</Text>
+              </TouchableOpacity>
+            </View>
           </View>
+
+          <View style={styles.row}>
+            <Text style={styles.rowLabel}>Tamanho da Fonte</Text>
+            <View style={styles.controlWrap}>
+              <TouchableOpacity onPress={() => setFontModalVisible(true)} style={styles.choiceButton}>
+                <Text style={styles.choiceLabel}>{getFontLabel(fontScale)}</Text>
+                <Text style={styles.caret}>▾</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           <Text style={styles.description}>
-            O tema segue automaticamente as preferências do sistema. 
-            Use esta opção para alternar manualmente.
+            Personalize a aparência do app. Automático segue o tema do sistema.
           </Text>
         </View>
+
+        {/* Theme Picker Modal */}
+        <Modal visible={themeModalVisible} transparent animationType="fade" onRequestClose={() => setThemeModalVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              {themeOptions.map(opt => (
+                <TouchableOpacity key={String(opt.key)} style={[styles.choiceButton, mode === opt.key && styles.choiceButtonActive, styles.modalOption]} onPress={() => { setThemeMode(opt.key); setThemeModalVisible(false); }}>
+                  <Text style={[styles.choiceLabel, mode === opt.key ? { color: theme.onPrimary } : {}]}>{opt.label}</Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity style={[styles.choiceButton, styles.modalClose]} onPress={() => setThemeModalVisible(false)}>
+                <Text style={styles.choiceLabel}>Fechar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Font Picker Modal */}
+        <Modal visible={fontModalVisible} transparent animationType="fade" onRequestClose={() => setFontModalVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              {fontOptions.map(opt => (
+                <TouchableOpacity key={String(opt.key)} style={[styles.choiceButton, Math.abs(fontScale - opt.key) < 0.01 && styles.choiceButtonActive, styles.modalOption]} onPress={() => { setFontScale(opt.key); setFontModalVisible(false); }}>
+                  <Text style={[styles.choiceLabel, Math.abs(fontScale - opt.key) < 0.01 ? { color: theme.onPrimary } : {}]}>{opt.label}</Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity style={[styles.choiceButton, styles.modalClose]} onPress={() => setFontModalVisible(false)}>
+                <Text style={styles.choiceLabel}>Fechar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </View>
     </ScrollView>
   );

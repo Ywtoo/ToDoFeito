@@ -54,6 +54,69 @@ export const colors = {
     // Cor para usar em cima de elementos `primary`
     onPrimary: '#FFFFFF',
   },
+  // Blue variant: slightly brighter surfaces and blue-accented palette
+  blue: {
+    background: '#EDF8FF',
+    surface: '#F8FDFF',
+    surfaceVariant: '#E6F6FF',
+    text: '#06283D',
+    textSecondary: '#194049',
+    textTertiary: '#4B6B7A',
+    border: '#D6EEF9',
+    borderLight: '#EDF8FF',
+    shadow: '#000',
+    overlay: 'rgba(6, 40, 61, 0.5)',
+    ripple: 'rgba(59, 130, 246, 0.12)',
+    primary: '#0EA5E9',
+    success: '#10B981',
+    error: '#EF4444',
+    warning: '#F59E0B',
+    disabled: '#F1F5F9',
+    disabledText: '#94A3B8',
+    onPrimary: '#FFFFFF',
+  },
+  // Very dark theme: nearly black surfaces for low-light environments
+  veryDark: {
+    background: '#000000',
+    surface: '#0D0D0D',
+    surfaceVariant: '#1A1A1A',
+    text: '#E8E8E8',
+    textSecondary: '#B0B0B0',
+    textTertiary: '#808080',
+    border: '#2A2A2A',
+    borderLight: '#333333',
+    shadow: '#000',
+    overlay: 'rgba(0,0,0,0.9)',
+    ripple: 'rgba(255,255,255,0.08)',
+    primary: '#5B9FFF',
+    success: '#10B981',
+    error: '#EF4444',
+    warning: '#F59E0B',
+    disabled: '#1A1A1A',
+    disabledText: '#606060',
+    onPrimary: '#000000',
+  },
+  // Sepia theme: warm, paper-like tones
+  sepia: {
+    background: '#F4EDE0',
+    surface: '#F2E7D0',
+    surfaceVariant: '#E8DFC4',
+    text: '#3B2E2A',
+    textSecondary: '#6B5A51',
+    textTertiary: '#9C8476',
+    border: '#E1D4C3',
+    borderLight: '#F0E7DB',
+    shadow: '#000',
+    overlay: 'rgba(59, 41, 20, 0.5)',
+    ripple: 'rgba(188, 119, 51, 0.12)',
+    primary: '#C07A3B',
+    success: '#10B981',
+    error: '#EF4444',
+    warning: '#F59E0B',
+    disabled: '#F1EDE8',
+    disabledText: '#C9B8A9',
+    onPrimary: '#FFFFFF',
+  },
 };
 
 // Espaçamentos
@@ -77,6 +140,10 @@ export const fontSize = {
   xxl: 24,
 };
 
+// helper to scale font sizes according to user preference
+export function scaleFont(size: number, scale: number) {
+  return Math.round(size * (scale || 1));
+}
 // Border radius
 export const borderRadius = {
   sm: 8,
@@ -111,4 +178,4 @@ export const shadows = {
 };
 
 // Tipo Theme para usar nas factories de estilo
-export type Theme = typeof colors.light;
+export type Theme = typeof colors.light | typeof colors.dark | typeof colors.blue | typeof colors.veryDark | typeof colors.sepia;

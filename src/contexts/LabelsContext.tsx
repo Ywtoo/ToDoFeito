@@ -1,8 +1,6 @@
 
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useLabels } from '../hooks/useLabels';
-import { Label } from '../types';
-
 // Definir o tipo de retorno do useLabels para termos IntelliSense completo
 type UseLabelsReturnType = ReturnType<typeof useLabels>;
 

@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
-import { spacing, borderRadius, shadows, Theme, colors } from './variables';
+import { spacing, borderRadius, shadows, Theme, colors, scaleFont } from './variables';
 
-export const createBaseModalStyles = (theme: Theme) => StyleSheet.create({
+export const createBaseModalStyles = (theme: Theme, fontScale = 1) => StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: theme.overlay,
@@ -17,7 +17,7 @@ export const createBaseModalStyles = (theme: Theme) => StyleSheet.create({
     ...shadows.large,
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: scaleFont(20, fontScale),
     fontWeight: '600',
     marginBottom: spacing.lg,
     color: theme.text,
@@ -39,7 +39,7 @@ export const createBaseModalStyles = (theme: Theme) => StyleSheet.create({
   },
   cancelButtonText: {
     color: theme.text,
-    fontSize: 16,
+    fontSize: scaleFont(16, fontScale),
     fontWeight: '600',
   },
   buttonPrimary: {
@@ -47,7 +47,7 @@ export const createBaseModalStyles = (theme: Theme) => StyleSheet.create({
   },
   buttonText: {
     color: theme.onPrimary,
-    fontSize: 16,
+    fontSize: scaleFont(16, fontScale),
     fontWeight: '600',
   },
   buttonDisabled: {

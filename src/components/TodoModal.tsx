@@ -3,6 +3,7 @@ import { TextInput, Text, View } from 'react-native';
 import DateTimePickerField from './DateTimePickerField';
 import { LabelPicker } from './LabelPicker';
 import { BaseModal } from './BaseModal';
+import ThemedIcon from './ThemedIcon';
 import { useTheme } from '../contexts/ThemeContext';
 import { createTodoModalStyles } from '../styles/TodoModal.styles';
 import { Todo, Label } from '../types';
@@ -31,8 +32,8 @@ export default function TodoModal({
   labels,
   defaultLabelId,
 }: Props) {
-  const { theme } = useTheme();
-  const styles = useMemo(() => createTodoModalStyles(theme), [theme]);
+  const { theme, fontScale } = useTheme();
+  const styles = useMemo(() => createTodoModalStyles(theme, fontScale), [theme, fontScale]);
   
   const [title, setTitle] = useState(initial?.title ?? '');
   const [description, setDescription] = useState(initial?.description ?? '');
@@ -92,7 +93,7 @@ export default function TodoModal({
       }}>
       <View>
         <TextInput
-          placeholder="Título da tarefa"
+          placeholder="Título"
           value={title}
           onChangeText={setTitle}
           style={styles.input}
@@ -100,7 +101,7 @@ export default function TodoModal({
         />
         
         <TextInput
-          placeholder="Adicione uma descrição (opcional)"
+          placeholder="Descrição (opcional)"
           value={description}
           onChangeText={setDescription}
           style={[styles.input, styles.inputMultiline]}
@@ -109,25 +110,33 @@ export default function TodoModal({
           placeholderTextColor={theme.textTertiary}
         />
 
+        <View style={styles.sectionRow}>
+          <ThemedIcon lib="MaterialIcons" name="label" size={16} colorKey="textSecondary" />
+          <Text style={styles.sectionLabel}>Label</Text>
+        </View>
         <LabelPicker
           labels={labels}
           selectedLabelId={labelId}
           onSelectLabel={setLabelId}
         />
         
-        <Text style={styles.sectionLabel}>Datas</Text>
-        
-        <DateTimePickerField 
-          value={dueInitial} 
-          onChange={setDueInitial} 
-          placeholder="Início Previsto (Opcional)"
-        />
-        
-        <DateTimePickerField 
-          value={dueAt} 
-          onChange={setDueAt} 
-          placeholder="Prazo Final (Define notificações)"
-        />
+        <View style={styles.sectionRow}>
+          <ThemedIcon lib="MaterialIcons" name="event" size={16} colorKey="textSecondary" />
+          <Text style={styles.sectionLabel}>Datas</Text>
+        </View>
+        <View style={styles.datesContainer}>
+          <DateTimePickerField 
+            value={dueInitial} 
+            onChange={setDueInitial} 
+            placeholder="Início (opcional)"
+          />
+          
+          <DateTimePickerField 
+            value={dueAt} 
+            onChange={setDueAt} 
+            placeholder="Prazo Final"
+          />
+        </View>
       </View>
     </BaseModal>
   );

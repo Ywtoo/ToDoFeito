@@ -1,5 +1,9 @@
 import React from 'react';
-import { Modal, View, Text, StyleSheet, Button } from 'react-native';
+import { View, Text } from 'react-native';
+import { useTheme } from '../contexts/ThemeContext';
+import { createAccountConflictModalStyles } from '../styles/AccountConflictModal.style';
+import { BaseModal } from './BaseModal';
+import ThemedIcon from './ThemedIcon';
 import { DriveUser } from '../types';
 
 type Conflict = {
@@ -17,6 +21,9 @@ type Props = {
 };
 
 export default function AccountConflictModal({ visible, conflict, onMerge, onRestore, onCancel }: Props) {
+  const { theme, fontScale } = useTheme();
+  const styles = createAccountConflictModalStyles(theme, fontScale);
+
   if (!conflict) {
     return null;
   }
@@ -42,60 +49,65 @@ export default function AccountConflictModal({ visible, conflict, onMerge, onRes
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View style={styles.backdrop}>
-        <View style={styles.container}>
-          <Text style={styles.title}>Troca de Conta Detectada</Text>
-          <Text style={styles.message}>
-            Você está conectado como {conflict.remoteEmail}, mas os dados locais pertencem a {conflict.localEmail}.
-            {'\n\n'}
-            <Text style={styles.bold}>Escolha uma opção:</Text>
-            {'\n\n'}
-            <Text style={styles.bold}>Mesclar:</Text> Mantém suas tarefas locais + baixa da nova conta. Perde compartilhamentos.
-            {'\n\n'}
-            <Text style={styles.bold}>Substituir:</Text> APAGA TUDO local e baixa apenas da nova conta.
+    <BaseModal
+      visible={visible}
+      onClose={handleCancel}
+      title="Troca de Conta"
+      primaryButton={{ label: 'Mesclar', onPress: handleMerge }}
+      secondaryButton={{ label: 'Substituir', onPress: handleRestore }}
+    >
+      <View>
+        <View style={styles.accountInfo}>
+          <View style={styles.accountRow}>
+            <ThemedIcon lib="MaterialIcons" name="person" size={18} colorKey="textSecondary" />
+            <View style={styles.accountDetails}>
+              <Text style={styles.accountLabel}>Conta Local</Text>
+              <Text style={styles.accountEmail}>{conflict.localEmail}</Text>
+            </View>
+          </View>
+          <View style={styles.accountDivider} />
+          <View style={styles.accountRow}>
+            <ThemedIcon lib="MaterialIcons" name="cloud" size={18} colorKey="primary" />
+            <View style={styles.accountDetails}>
+              <Text style={styles.accountLabel}>Conta na Nuvem</Text>
+              <Text style={styles.accountEmail}>{conflict.remoteEmail}</Text>
+            </View>
+          </View>
+        </View>
+
+        <Text style={styles.warningText}>
+          Escolha uma opção:
+        </Text>
+
+        <View style={styles.optionCard}>
+          <View style={styles.optionHeader}>
+            <ThemedIcon lib="MaterialIcons" name="merge-type" size={22} colorKey="primary" />
+            <Text style={styles.optionTitle}>Mesclar</Text>
+          </View>
+          <Text style={styles.optionDescription}>
+            Mantém suas tarefas + adiciona as novas.
           </Text>
-          <View style={styles.actions}>
-            <View style={styles.button}><Button title="Mesclar (Manter locais)" onPress={handleMerge} /></View>
-            <View style={styles.button}><Button title="Substituir (Baixar da nuvem)" onPress={handleRestore} color="#d9534f" /></View>
-            <View style={styles.button}><Button title="Cancelar" onPress={handleCancel} color="#666" /></View>
+          <View style={styles.warningRow}>
+            <ThemedIcon lib="MaterialIcons" name="warning" size={14} colorKey="warning" />
+            <Text style={styles.optionNote}>Perde compartilhamentos</Text>
+          </View>
+        </View>
+
+        <View style={styles.optionCard}>
+          <View style={styles.optionHeader}>
+            <ThemedIcon lib="MaterialIcons" name="cloud-download" size={22} colorKey="error" />
+            <Text style={styles.optionTitle}>Substituir</Text>
+          </View>
+          <Text style={styles.optionDescription}>
+            Apaga tudo local e baixa da nuvem.
+          </Text>
+          <View style={styles.warningRow}>
+            <ThemedIcon lib="MaterialIcons" name="warning" size={14} colorKey="warning" />
+            <Text style={styles.optionNote}>Perde tarefas locais</Text>
           </View>
         </View>
       </View>
-    </Modal>
+    </BaseModal>
   );
 }
-
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  container: {
-    width: '86%',
-    backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 16,
-    elevation: 4,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  message: {
-    marginBottom: 12,
-    lineHeight: 20,
-  },
-  bold: {
-    fontWeight: '600',
-  },
-  actions: {
-    flexDirection: 'column',
-  },
-  button: {
-    marginTop: 6,
-  },
-});
+ 
