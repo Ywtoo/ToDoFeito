@@ -12,6 +12,14 @@ buildscript {
         google()
         mavenCentral()
     }
+    allprojects {
+    repositories {
+        mavenLocal()
+        google()
+        mavenCentral()
+        maven { url 'https://jitpack.io' }
+    }
+}
     dependencies {
         classpath("com.android.tools.build:gradle")
         classpath("com.facebook.react:react-native-gradle-plugin")
@@ -20,3 +28,9 @@ buildscript {
 }
 
 apply plugin: "com.facebook.react.rootproject"
+
+// Ensure Gradle knows where to find the Hermes compiler on Windows
+project.ext.react = [
+    // Path from android/ to the repo node_modules folder
+    hermesCommand: "$rootDir/../node_modules/hermes-engine/win64-bin/hermesc.exe"
+]

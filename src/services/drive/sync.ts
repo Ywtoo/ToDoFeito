@@ -141,12 +141,12 @@ export const removeLabelFromRegistry = async (labelId: string): Promise<void> =>
 export const cleanupDuplicateFiles = async (allFileIds: string[], keepFileId: string): Promise<void> => {
   if (!allFileIds || allFileIds.length <= 1) return;
   
-  console.log(`[cleanupDuplicateFiles] Limpando duplicatas. Manter: ${keepFileId}, Total: ${allFileIds.length}`);
+  
   
   const toDelete = allFileIds.filter(id => id !== keepFileId);
   
   for (const id of toDelete) {
-    console.log(`[cleanupDuplicateFiles] Deletando duplicata: ${id}`);
+    
     await deleteFile(id);
   }
 };
@@ -229,7 +229,7 @@ export const uploadLabelData = async (
     if (!validFileId) {
       const existingFile = await findFile(DATA_FILE_NAME, folderId);
       if (existingFile) {
-        console.log('[uploadLabelData] Arquivo já existe, atualizando:', existingFile.id);
+    
         validFileId = existingFile.id;
       }
     }
@@ -257,24 +257,24 @@ export const listAndMergeAllDataFiles = async (
   folderId: string
 ): Promise<{ label: Label; todos: Todo[]; allFileIds: string[] } | null> => {
   try {
-    console.log('[listAndMergeAllDataFiles] Listando todos os data.json na pasta:', folderId);
+    
     
     // Lista TODOS os arquivos na pasta
     const query = `'${folderId}' in parents and trashed=false`;
     const files = await listFiles(query);
     
     if (!files || files.length === 0) {
-      console.log('[listAndMergeAllDataFiles] Nenhum arquivo encontrado');
+      
       return null;
     }
     
-    console.log(`[listAndMergeAllDataFiles] Encontrados ${files.length} arquivo(s)`);
+    
     
     // Filtra apenas data.json
     const dataFiles = files.filter(f => f.name === DATA_FILE_NAME);
     
     if (dataFiles.length === 0) {
-      console.log('[listAndMergeAllDataFiles] Nenhum data.json encontrado');
+      
       return null;
     }
     
@@ -324,7 +324,7 @@ export const listAndMergeAllDataFiles = async (
     if (!mergedLabel) return null;
     
     const mergedTodos = Array.from(mergedTodosMap.values());
-    console.log(`[listAndMergeAllDataFiles] ✓ Mesclados ${dataFiles.length} arquivos → ${mergedTodos.length} todos únicos`);
+    
     
     return { label: mergedLabel, todos: mergedTodos, allFileIds };
   } catch (error) {
@@ -340,20 +340,12 @@ export const downloadLabelData = async (
   fileId: string
 ): Promise<LabelDataFile | null> => {
   try {
-    console.log('[downloadLabelData] Baixando arquivo:', fileId);
     const content = await downloadFile(fileId);
     if (!content) {
-      console.log('[downloadLabelData] Conteúdo vazio');
       return null;
     }
 
-    console.log('[downloadLabelData] Conteúdo recebido, tamanho:', content.length);
-    console.log('[downloadLabelData] Primeiros 100 chars:', content.substring(0, 100));
-    console.log('[downloadLabelData] Parseando JSON...');
     const data: LabelDataFile = JSON.parse(content);
-    console.log('[downloadLabelData] Dados parseados:');
-    console.log('[downloadLabelData] - Label:', data.label?.name);
-    console.log('[downloadLabelData] - Todos:', data.todos?.length || 0);
     return data;
   } catch (error) {
     console.error('[downloadLabelData] Erro:', error);
@@ -370,7 +362,7 @@ export const downloadSharedLabel = async (
   folderId: string
 ): Promise<LabelDataFile | null> => {
   try {
-    console.log('[downloadSharedLabel] Buscando e mesclando TODOS os data.json na pasta:', folderId);
+    
 
     // USA A NOVA LÓGICA - lista e mescla TODOS os arquivos
     const merged = await listAndMergeAllDataFiles(folderId);
@@ -380,10 +372,7 @@ export const downloadSharedLabel = async (
       return null;
     }
 
-    console.log('[downloadSharedLabel] ✓ Dados mesclados com sucesso:');
-    console.log('[downloadSharedLabel]   - label:', merged.label?.name);
-    console.log('[downloadSharedLabel]   - todos:', merged.todos?.length || 0);
-    console.log('[downloadSharedLabel]   - arquivos mesclados:', merged.allFileIds.length);
+    
     
     // ATUALIZA REGISTRO
     await updateLabelInRegistry(merged.label, folderId);
@@ -474,7 +463,7 @@ export const syncLabel = async (
   changed: boolean;
 } | null> => {
   try {
-    console.log(`[syncLabel] Sincronizando: ${label.name}, role=${label.ownershipRole}, shared=${label.shared}, isDefault=${label.isDefault}`);
+    
     
     // Se não tem driveMetadata, este é o primeiro sync
     if (!label.driveMetadata) {
@@ -515,7 +504,7 @@ export const syncLabel = async (
     }
 
     // ===== PASSO 1: BAIXAR E PROCESSAR TUDO LOCAL =====
-    console.log(`[syncLabel] Passo 1: Baixando e mesclando TODOS os arquivos da pasta...`);
+    
     
     const allData = await listAndMergeAllDataFiles(label.driveMetadata.folderId);
     
@@ -525,13 +514,12 @@ export const syncLabel = async (
     
     if (!allData) {
       // Nenhum arquivo no Drive - usar dados locais
-      console.log(`[syncLabel] Nenhum dado no Drive, usando dados locais`);
+      
       finalTodos = localTodos;
       needsUpload = true;
     } else {
       // Tem dados no Drive - mesclar com local
-      console.log(`[syncLabel] ${allData.allFileIds.length} arquivo(s) no Drive, mesclando...`);
-      console.log(`[syncLabel] Remotos: ${allData.todos.length} todos, Locais: ${localTodos.length} todos`);
+      
       
       // MERGE LOCAL - compara data atualização
       // IMPORTANTE: Normaliza todos os todos remotos para terem o labelId do label local
@@ -539,7 +527,7 @@ export const syncLabel = async (
       const normalizedRemoteTodos = allData.todos.map(t => ({ ...t, labelId: label.id }));
       
       finalTodos = mergeTodos(localTodos, normalizedRemoteTodos);
-      console.log(`[syncLabel] Merge local completo: ${finalTodos.length} todos finais`);
+      
       
       // Atualiza metadata do label se mudou no Drive
       if (allData.label.updatedAt > label.updatedAt) {
@@ -551,7 +539,6 @@ export const syncLabel = async (
     
     // ===== PASSO 2: UPLOAD SÓ NO FINAL COM DADOS COMPLETOS =====
     if (!needsUpload) {
-      console.log(`[syncLabel] Sem mudanças, pulando upload`);
       return {
         label: finalLabel,
         todos: finalTodos,
@@ -559,12 +546,12 @@ export const syncLabel = async (
       };
     }
     
-    console.log(`[syncLabel] Passo 2: Fazendo upload dos dados finais mesclados...`);
+    
     const uploadResult = await uploadLabelData(finalLabel, finalTodos);
     
     if (!uploadResult) {
       // Se falhar, tenta recriar estrutura
-      console.log('[syncLabel] Upload falhou, tentando recriar estrutura...');
+      
       const appFolderId = await ensureAppFolder();
       if (!appFolderId) {
         throw new Error('Falha ao criar pasta do app');
@@ -585,7 +572,7 @@ export const syncLabel = async (
         throw new Error('Falha no upload após recriar estrutura');
       }
 
-      console.log('[syncLabel] ✓ Estrutura recriada, upload concluído!');
+      
       return {
         label: {
           ...updatedLabel,
@@ -600,7 +587,7 @@ export const syncLabel = async (
       };
     }
 
-    console.log(`[syncLabel] ✓ Upload concluído com sucesso!`);
+    
     
     // LIMPEZA DE ARQUIVOS DUPLICADOS
     if (allData && allData.allFileIds && allData.allFileIds.length > 1) {
@@ -646,7 +633,7 @@ export const loadMetadata = async (appFolderId: string): Promise<DriveMetadata> 
     }
     
     const metadata: DriveMetadata = JSON.parse(content);
-    console.log(`[loadMetadata] Carregado: ${metadata.deletedLabels.length} labels deletados registrados`);
+    
     return metadata;
   } catch (error) {
     console.error('Load metadata error:', error);
@@ -680,7 +667,7 @@ export const saveMetadata = async (
     );
     
     if (result) {
-      console.log('[saveMetadata] Metadata salvo com sucesso');
+      
       return true;
     }
     
@@ -701,7 +688,7 @@ export const markLabelAsDeleted = async (
 ): Promise<boolean> => {
   try {
     if (!label.driveMetadata) {
-      console.log('[markLabelAsDeleted] Label não tem driveMetadata, nada a marcar');
+      
       return true;
     }
     
@@ -721,7 +708,7 @@ export const markLabelAsDeleted = async (
       });
       metadata.updatedAt = Date.now();
       
-      console.log(`[markLabelAsDeleted] Marcando label "${label.name}" como deletado (pasta ${label.driveMetadata.folderId} permanece no Drive)`);
+      
       return await saveMetadata(appFolderId, metadata);
     }
     
@@ -749,7 +736,7 @@ export const unmarkLabelAsDeleted = async (
     
     if (metadata.deletedLabels.length < originalLength) {
       metadata.updatedAt = Date.now();
-      console.log(`[unmarkLabelAsDeleted] Removendo marca de deleção para pasta ${folderId}`);
+      
       return await saveMetadata(appFolderId, metadata);
     }
     
@@ -767,7 +754,7 @@ export const unmarkLabelAsDeleted = async (
 export const deleteLabelFolder = async (label: Label): Promise<boolean> => {
   try {
     if (!label.driveMetadata?.folderId) {
-      console.log('[deleteLabelFolder] Label não tem driveMetadata, nada a marcar');
+      
       return true;
     }
 
@@ -776,7 +763,7 @@ export const deleteLabelFolder = async (label: Label): Promise<boolean> => {
     if (appFolderId) {
       const success = await markLabelAsDeleted(appFolderId, label);
       if (success) {
-        console.log(`[deleteLabelFolder] Label "${label.name}" marcado como deletado no metadata (pasta preservada no Drive)`);
+        
       }
       return success;
     }
@@ -801,13 +788,13 @@ export const listAllDriveLabels = async (): Promise<
   }>
 > => {
   try {
-    console.log('[listAllDriveLabels] Listando todos os labels no Drive...');
+    
     
     // TENTA LER O REGISTRO PRIMEIRO (Para encontrar labels compartilhados importados)
     const registry = await loadLabelsRegistry();
     const registryLabelsMap = new Map<string, RegistryEntry>();
     if (registry) {
-      console.log(`[listAllDriveLabels] Registro carregado com ${registry.labels.length} labels`);
+      
       registry.labels.forEach(l => registryLabelsMap.set(l.id, l));
     }
     
@@ -816,11 +803,10 @@ export const listAllDriveLabels = async (): Promise<
     const appFolders = await listFiles(appFoldersQuery);
     
     if (!appFolders || appFolders.length === 0) {
-      console.log('[listAllDriveLabels] Nenhuma pasta ToDoFeito encontrada');
       return [];
     }
 
-    console.log(`[listAllDriveLabels] Encontradas ${appFolders.length} pasta(s) ToDoFeito`);
+    
 
     const result: Array<{
       folderId: string;
@@ -832,13 +818,12 @@ export const listAllDriveLabels = async (): Promise<
 
     // 2. Para cada pasta ToDoFeito, lista as pastas de labels dentro dela
     for (const appFolder of appFolders) {
-      console.log(`[listAllDriveLabels] Listando labels em ${appFolder.name} (${appFolder.id})...`);
+      
       
       const query = buildLabelFoldersQuery(appFolder.id);
       const labelFolders = await listFiles(query);
       
       if (!labelFolders || labelFolders.length === 0) {
-        console.log(`[listAllDriveLabels] Nenhuma pasta de label em ${appFolder.name}`);
         continue;
       }
 
@@ -869,8 +854,6 @@ export const listAllDriveLabels = async (): Promise<
         // Pula se já encontrado
         if (result.some(r => r.folderId === regLabel.folderId)) continue;
         
-        console.log(`[listAllDriveLabels] Verificando label do registro: ${regLabel.name} (${regLabel.folderId})`);
-        
         try {
           // Verifica se tem data.json
           const dataFile = await findDataFileWithFallback(regLabel.folderId);
@@ -882,7 +865,7 @@ export const listAllDriveLabels = async (): Promise<
               modifiedTime: dataFile.modifiedTime,
               appFolderId: '', // Labels compartilhados diretos podem não ter pasta app pai conhecida
             });
-            console.log(`[listAllDriveLabels] Label compartilhado adicionado via registro: ${regLabel.name}`);
+            
           }
         } catch (err) {
           console.warn(`[listAllDriveLabels] Label do registro não acessível: ${regLabel.name}`, err);
@@ -890,7 +873,7 @@ export const listAllDriveLabels = async (): Promise<
       }
     }
 
-    console.log(`[listAllDriveLabels] Encontrados ${result.length} labels no Drive (incluindo compartilhados)`);
+    
     return result;
   } catch (error) {
     console.error('List all drive labels error:', error);
@@ -903,7 +886,7 @@ export const listAllDriveLabels = async (): Promise<
  */
 export const restoreFromDrive = async (): Promise<{ labels: Label[]; todos: Todo[] } | null> => {
   try {
-    console.log('[restoreFromDrive] Iniciando restauração...');
+    
     
     // 1. Garante/Encontra pasta do app
     const appFolderId = await ensureAppFolder();
@@ -917,7 +900,6 @@ export const restoreFromDrive = async (): Promise<{ labels: Label[]; todos: Todo
     const labelFolders = await listFiles(query);
     
     if (!labelFolders) {
-      console.log('[restoreFromDrive] Nenhuma pasta de label encontrada');
       return { labels: [], todos: [] };
     }
 
@@ -927,12 +909,11 @@ export const restoreFromDrive = async (): Promise<{ labels: Label[]; todos: Todo
     // 3. Para cada pasta, LISTA E MESCLA TODOS os data.json
     for (const folder of labelFolders) {
       try {
-        console.log(`[restoreFromDrive] Processando pasta: ${folder.name}`);
         
         // USA A NOVA LÓGICA - lista e mescla TODOS os arquivos da pasta
         const merged = await listAndMergeAllDataFiles(folder.id);
         
-        if (merged) {
+          if (merged) {
           // Reconstrói label com metadata atualizado
           const labelWithMeta: Label = {
             ...merged.label,
@@ -948,7 +929,6 @@ export const restoreFromDrive = async (): Promise<{ labels: Label[]; todos: Todo
           const todosForLabel = merged.todos.map(t => ({ ...t, labelId: labelWithMeta.id }));
           restoredTodos = [...restoredTodos, ...todosForLabel];
           
-          console.log(`[restoreFromDrive] ✓ Pasta ${folder.name}: ${merged.todos.length} todos (${merged.allFileIds.length} arquivo(s) mesclado(s))`);
         } else {
           console.warn(`[restoreFromDrive] ⚠️ Pasta ${folder.name}: sem dados`);
         }
@@ -958,7 +938,7 @@ export const restoreFromDrive = async (): Promise<{ labels: Label[]; todos: Todo
       }
     }
 
-    console.log(`[restoreFromDrive] Restaurados ${restoredLabels.length} labels e ${restoredTodos.length} todos`);
+    
     return { labels: restoredLabels, todos: restoredTodos };
 
   } catch (error) {
@@ -976,12 +956,11 @@ export const mergeWithDrive = async (
   localTodos: Todo[]
 ): Promise<{ labels: Label[]; todos: Todo[] } | null> => {
   try {
-    console.log('[mergeWithDrive] Iniciando merge...');
+    
     
     // 1. Baixa todos os dados do Drive
     const driveData = await restoreFromDrive();
     if (!driveData) {
-      console.log('[mergeWithDrive] Nenhum dado no Drive, usando dados locais');
       return { labels: localLabels, todos: localTodos };
     }
     
@@ -1028,7 +1007,7 @@ export const mergeWithDrive = async (
       }
     });
     
-    console.log(`[mergeWithDrive] Merge completo: ${mergedLabels.size} labels, ${mergedTodos.size} todos`);
+    
     return {
       labels: Array.from(mergedLabels.values()),
       todos: Array.from(mergedTodos.values())

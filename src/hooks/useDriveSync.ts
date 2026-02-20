@@ -54,7 +54,7 @@ export const useDriveSync = (
     if (!conflict) return;
 
     try {
-      console.log('[useDriveSync] Resolvendo conflito: Merge');
+      
 
       // 1. Atualiza usuário atual primeiro
       await accountManagement.setAuthenticatedUser(conflict.pendingUser);
@@ -63,7 +63,6 @@ export const useDriveSync = (
       const mergeResult = await mergeWithDrive(labels, getTodosByLabel ? Object.values(labels).flatMap(l => getTodosByLabel(l.id)) : []);
       
       if (mergeResult) {
-        console.log('[useDriveSync] Merge concluído. Atualizando estado...');
         
         // 3. Limpa metadata para forçar upload dos dados mergeados
         const cleanLabels = cleanLabelsForMerge(mergeResult.labels);
@@ -94,13 +93,12 @@ export const useDriveSync = (
     if (!conflict) return;
 
     try {
-      console.log('[useDriveSync] Resolvendo conflito: Restore');
+      
 
       // 1. Seta usuário antes de chamar API
       await accountManagement.setAuthenticatedUser(conflict.pendingUser);
 
       // 2. Limpa TODOS os dados locais (exceto login que já foi setado acima)
-      console.log('[useDriveSync] Limpando dados locais...');
       setLabels([]);
       updateTodos([]);
       await StorageService.saveLabels([]);
@@ -110,7 +108,6 @@ export const useDriveSync = (
       const restoreResult = await restoreFromDrive();
       
       if (restoreResult) {
-        console.log('[useDriveSync] Restore concluído. Atualizando estado...');
         // 4. Substitui dados locais com dados do Drive
         setLabels(restoreResult.labels);
         updateTodos(restoreResult.todos);
@@ -144,7 +141,6 @@ export const useDriveSync = (
    */
   const signOutWithCleanup = useCallback(async () => {
     try {
-      console.log('[useDriveSync] Fazendo logout e limpando compartilhamentos...');
       
       // 1. Remove labels compartilhados (onde sou collaborator)
       // 2. Limpa flags de sharing dos labels próprios
@@ -152,7 +148,6 @@ export const useDriveSync = (
         .filter(label => {
           // Remove labels onde sou apenas colaborador
           if (label.ownershipRole === 'collaborator') {
-            console.log(`[useDriveSync] Removendo label compartilhado: ${label.name}`);
             return false;
           }
           return true;
@@ -164,8 +159,7 @@ export const useDriveSync = (
         }));
       
       // Atualiza estado e persiste
-      if (cleanedLabels.length !== labels.length || labels.some(l => l.shared)) {
-        console.log(`[useDriveSync] Labels após limpeza: ${cleanedLabels.length} (antes: ${labels.length})`);
+        if (cleanedLabels.length !== labels.length || labels.some(l => l.shared)) {
         setLabels(cleanedLabels);
         await StorageService.saveLabels(cleanedLabels);
       }

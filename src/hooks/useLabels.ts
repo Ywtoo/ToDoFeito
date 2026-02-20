@@ -117,7 +117,6 @@ export const useLabels = () => {
   const importLabel = useCallback((label: Label) => {
     // Se for label padrão, retorna o ID do padrão local (não cria novo)
     if (label.isDefault || label.id === DEFAULT_LABEL_ID) {
-      console.log('[useLabels] Label padrão detectado - usando padrão local');
       const defaultLabel = labels.find(l => l.isDefault) || labels.find(l => l.id === DEFAULT_LABEL_ID); // Tenta achar por flag OU id
       
       if (defaultLabel) {

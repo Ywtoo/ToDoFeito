@@ -39,10 +39,8 @@ export const signIn = async (): Promise<DriveUser | null> => {
     await GoogleSignin.hasPlayServices();
     const response = await GoogleSignin.signIn();
     
-    console.log('[GoogleSignIn] Response type:', response.type);
     
     if (response.type !== 'success') {
-      console.log('[GoogleSignIn] Sign in não foi sucesso');
       return null;
     }
     
@@ -61,7 +59,6 @@ export const signIn = async (): Promise<DriveUser | null> => {
         tokens = await GoogleSignin.getTokens();
       }
     } catch (tokensErr) {
-      console.log('[signIn] getTokens não disponível, usando token alternativo', tokensErr);
       tokens = null;
     }
 
@@ -73,15 +70,6 @@ export const signIn = async (): Promise<DriveUser | null> => {
     
     return driveUser;
   } catch (error: any) {
-    if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-      console.log('User cancelled sign-in');
-    } else if (error.code === statusCodes.IN_PROGRESS) {
-      console.log('Sign-in already in progress');
-    } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-      console.log('Play services not available');
-    } else {
-      console.error('Sign-in error:', error);
-    }
     return null;
   }
 };
@@ -105,8 +93,7 @@ export const signOut = async (): Promise<void> => {
 export const getCurrentUser = async (): Promise<DriveUser | null> => {
   try {
     const isSignedIn = await GoogleSignin.hasPreviousSignIn();
-    console.log('[getCurrentUser] hasPreviousSignIn:', isSignedIn);
-    
+
     if (!isSignedIn) {
       return null;
     }
@@ -116,7 +103,6 @@ export const getCurrentUser = async (): Promise<DriveUser | null> => {
     // Se getCurrentUser retornar null mas isSignedIn é true,
     // tenta fazer signInSilently para recuperar a sessão
     if (!response) {
-      console.log('[getCurrentUser] Tentando signInSilently...');
       try {
         const silentResult = await GoogleSignin.signInSilently();
         if (silentResult.type === 'success') {
@@ -135,7 +121,6 @@ export const getCurrentUser = async (): Promise<DriveUser | null> => {
               tokens = await GoogleSignin.getTokens();
             }
           } catch (tErr) {
-            console.log('[getCurrentUser] getTokens failed in silent retry', tErr);
             tokens = null;
           }
 
@@ -143,7 +128,6 @@ export const getCurrentUser = async (): Promise<DriveUser | null> => {
           return buildDriveUser(user, accessToken);
         }
       } catch (silentError) {
-        console.log('[getCurrentUser] signInSilently falhou:', silentError);
         return null;
       }
       return null;
@@ -164,7 +148,6 @@ export const getCurrentUser = async (): Promise<DriveUser | null> => {
         tokens = await GoogleSignin.getTokens();
       }
     } catch (tokensErr) {
-      console.log('[getCurrentUser] getTokens falhou, tentando usar idToken/serverAuthCode do objeto user', tokensErr);
       tokens = null;
     }
 
@@ -193,7 +176,6 @@ export const getCurrentUser = async (): Promise<DriveUser | null> => {
     }
     
     // Se não há token no cache, faz signInSilently para obter novo token
-    console.log('[getCurrentUser] Sem token no objeto nem em cache, tentando signInSilently...');
       try {
         const silentResult = await GoogleSignin.signInSilently();
         if (silentResult.type === 'success') {
@@ -206,7 +188,6 @@ export const getCurrentUser = async (): Promise<DriveUser | null> => {
               tokensAfterSilent = await GoogleSignin.getTokens();
             }
           } catch (tokensErr) {
-            console.log('[getCurrentUser] getTokens após silent sign-in falhou', tokensErr);
             tokensAfterSilent = null;
           }
 
@@ -219,7 +200,6 @@ export const getCurrentUser = async (): Promise<DriveUser | null> => {
           return driveUser;
         }
       } catch (error) {
-        console.log('[getCurrentUser] signInSilently falhou ao obter tokens:', error);
       }
     
     // Fallback: retorna user sem token (vai falhar nas chamadas de API)

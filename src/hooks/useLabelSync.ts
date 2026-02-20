@@ -92,7 +92,6 @@ export const useLabelSync = (
       }
 
       if (syncingLabels.has(labelId)) {
-        console.log('[useLabelSync] Label já está sendo sincronizado:', labelId);
         return null;
       }
 
@@ -170,13 +169,13 @@ export const useLabelSync = (
             },
           };
 
-          console.log(`[useLabelSync] Importando label: ${labelToImport.name}, role=${labelToImport.ownershipRole}, shared=${labelToImport.shared}`);
+          
 
           const newLabelId = importLabel(labelToImport);
           const todosWithCorrectLabel = (entry.todos || []).map(t => ({ ...t, labelId: newLabelId }));
           // CRITICAL FIX: Pass the labelId to updateTodos to ensure we don't wipe out other todos!
           updateTodos(todosWithCorrectLabel, newLabelId);
-          console.log(`[useLabelSync] Label importado com ${todosWithCorrectLabel.length} todos`);
+          
         } catch (e) {
           console.error('[syncAll] Erro ao aplicar importEntry localmente:', e);
         }

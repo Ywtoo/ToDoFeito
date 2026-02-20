@@ -9,7 +9,7 @@ interface RemoteInfo {
   html_url?: string;
 }
 
-export default function UpdateChecker() {
+export default function UpdateChecker({ receiveBeta = false }: { receiveBeta?: boolean }) {
   // Show update checker in production and development. It's safe and non-blocking.
   const LOCAL_VERSION = DeviceInfo.getVersion() || '0.0.0';
   const { theme, fontScale } = useTheme();
@@ -24,13 +24,26 @@ export default function UpdateChecker() {
     async function check() {
       setLoading(true);
       try {
-        const res = await fetch('https://api.github.com/repos/Ywtoo/ToDoFeito/releases/latest', {
-          headers: { Accept: 'application/vnd.github.v3+json' },
-        });
-        if (!mounted) return;
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
-        setRemote({ tag_name: json.tag_name, html_url: json.html_url });
+        if (receiveBeta) {
+          // Fetch list of releases (includes prereleases) and pick the most recent
+          const res = await fetch('https://api.github.com/repos/Ywtoo/ToDoFeito/releases?per_page=10', {
+            headers: { Accept: 'application/vnd.github.v3+json' },
+          });
+          if (!mounted) return;
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const arr = await res.json();
+          const first = Array.isArray(arr) && arr.length ? arr[0] : null;
+          if (first) setRemote({ tag_name: first.tag_name, html_url: first.html_url });
+          else setError('No releases found');
+        } else {
+          const res = await fetch('https://api.github.com/repos/Ywtoo/ToDoFeito/releases/latest', {
+            headers: { Accept: 'application/vnd.github.v3+json' },
+          });
+          if (!mounted) return;
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const json = await res.json();
+          setRemote({ tag_name: json.tag_name, html_url: json.html_url });
+        }
       } catch (err: any) {
         setError(err?.message || 'Failed to check updates');
       } finally {

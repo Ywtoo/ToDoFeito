@@ -32,7 +32,6 @@ export const cleanupDeletedTodos = (
 
     // Remove deletados antigos
     if (todo.updatedAt < cutoffTime) {
-      console.log(`[cleanup] Removendo permanentemente todo deletado: ${todo.id}`);
       return false;
     }
 
@@ -71,7 +70,6 @@ export const cleanupDeletedTodosForLabel = (
 
     // Remove deletados antigos do label
     if (todo.updatedAt < cutoffTime) {
-      console.log(`[cleanup] Removendo permanentemente todo deletado do label ${labelId}: ${todo.id}`);
       return false;
     }
 

@@ -78,7 +78,6 @@ function AppContent() {
 
   useEffect(() => {
     if (user && user.email !== lastSyncedUser && !accountConflict) {
-      console.log('[App] ✨ Usuário logado, fazendo auto-sync...', user.email);
       setLastSyncedUser(user.email);
       // Delay pequeno para garantir que UI esteja pronta
       setTimeout(() => {
@@ -94,7 +93,6 @@ function AppContent() {
   // Debug: Log quando há conflito
   useEffect(() => {
     if (accountConflict) {
-      console.log('[App] 🚨 CONFLITO DE CONTA DETECTADO!', accountConflict);
     }
   }, [accountConflict]);
 
@@ -109,21 +107,16 @@ function AppContent() {
   // Deep link handler
   useEffect(() => {
     const handleUrl = async ({ url }: { url: string }) => {
-      console.log('[App] Deep link recebido:', url);
       const parsed = parseImportLink(url);
-      console.log('[App] Deep link parseado:', parsed);
       if (parsed) {
-        console.log('[App] Abrindo modal de importação:', parsed);
         setImportData(parsed);
         setImportModalVisible(true);
       } else {
-        console.log('[App] Deep link não reconhecido ou inválido');
       }
     };
 
     // Check initial URL (app opened via link)
     Linking.getInitialURL().then(url => {
-      console.log('[App] Initial URL:', url);
       if (url) {
         handleUrl({ url });
       }
@@ -138,7 +131,6 @@ function AppContent() {
   }, []);
 
   const handleImport = async () => {
-    console.log('[App] handleImport chamado, importData:', importData);
     if (!importData) return;
 
     setImporting(true);
@@ -146,7 +138,6 @@ function AppContent() {
     try {
       // Check if user is signed in
       if (!user) {
-        console.log('[App] Usuário não está logado, mostrando alerta');
         Alert.alert(
           'Login necessário',
           'Você precisa fazer login com o Google para importar labels compartilhados. Deseja fazer login agora?',
@@ -172,7 +163,6 @@ function AppContent() {
         return;
       }
 
-      console.log('[App] Usuário está logado, iniciando importação');
       await performImport();
     } catch (error) {
       console.error('[App] Erro na importação:', error);
@@ -183,7 +173,6 @@ function AppContent() {
   };
 
   const performImport = async () => {
-    console.log('[App] performImport iniciado');
     if (!importData) return;
 
     const result = await importSharedLabel(
@@ -192,7 +181,6 @@ function AppContent() {
     );
 
     if (result) {
-      console.log('[App] ✓ Label importado! Adicionando', result.todos.length, 'todos');
       // Add imported todos
       addTodos(result.todos);
 

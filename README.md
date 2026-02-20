@@ -1,97 +1,387 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# 🚀 ToDoFeito — Offline-First Task Manager com Sincronização Inteligente
 
-# Getting Started
+<p align="center">
+  <img src="docs/screenshots/preview.png" alt="ToDoFeito Preview" width="750"/>
+</p>
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+<p align="center">
+  <img src="https://img.shields.io/badge/Status-Beta-yellow?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" />
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" />
+  <img src="https://img.shields.io/badge/Offline_First-000000?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Google_Drive_API-34A853?style=for-the-badge&logo=google-drive&logoColor=white" />
+</p>
 
-## Step 1: Start Metro
+## 📚 Summary | Sumário
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+🇺🇸 English
+- [About the Project](#about-the-project)
+- [Technical Challenge](#technical-challenge)
+- [Implemented Solution](#implemented-solution)
+- [Architecture](#architecture)
+- [Technical Decisions & Trade-offs](#technical-decisions--trade-offs)
+- [Technologies](#technologies)
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+🇧🇷 Português
+- [Sobre o Projeto](#sobre-o-projeto)
+- [Desafio Técnico](#desafio-técnico)
+- [Solução Implementada](#solução-implementada)
+- [Arquitetura](#arquitetura)
+- [Decisões Técnicas & Trade-offs](#decisões-técnicas--trade-offs)
+- [Tecnologias](#tecnologias)
 
-```sh
-# Using npm
-npm start
+- [Screenshots](#Screenshots)
 
-# OR using Yarn
-yarn start
+
+#🇧🇷 Português
+
+## 📌 Sobre o Projeto
+
+O **ToDoFeito** é um aplicativo de gerenciamento de tarefas construído com React Native seguindo uma arquitetura **offline-first**, com sincronização opcional via Google Drive.
+
+Mais do que um simples gerenciador de tarefas, o foco deste projeto foi resolver um problema técnico real:
+
+> Como garantir consistência e integridade de dados entre múltiplos dispositivos sem depender de um backend próprio?
+
+A proposta foi projetar um sistema de sincronização confiável utilizando o Google Drive como camada remota opcional, mantendo:
+
+* Funcionamento completo offline
+* Resolução determinística de conflitos
+* Preservação de dados
+* Compartilhamento entre contas
+
+O resultado é uma aplicação que funciona integralmente sem internet, mas que pode sincronizar dados de forma previsível e segura quando necessário.
+
+📩 Para ativar o Drive Sync:
+**[gabrieln99626@gmail.com](mailto:gabrieln99626@gmail.com)**
+
+---
+
+
+
+## 🎯 Problema Técnico
+
+Aplicações sincronizadas normalmente utilizam backend dedicado.
+O desafio aqui foi utilizar o Google Drive como camada de persistência remota sem comprometer consistência ou segurança dos dados.
+
+Era necessário evitar:
+
+* Sobrescrita cega de informações
+* Perda de tarefas
+* Duplicação inconsistente
+* Conflitos entre dispositivos
+
+---
+
+## 🔄 Solução Implementada
+
+Foi desenvolvido um sistema de sincronização baseado em **merge determinístico**.
+
+### Fluxo de sincronização:
+
+1. Download completo dos dados remotos
+2. Comparação com estado local
+3. Mesclagem baseada em ID
+4. Upload apenas do estado consolidado
+
+### Regras adotadas:
+
+* Nunca apagar automaticamente dados remotos
+* Atualizar apenas tarefas com IDs correspondentes
+* Preservar itens únicos
+* Validar antes de enviar
+
+Esse modelo reduz risco de inconsistência e mantém previsibilidade no processo.
+
+---
+
+## 👥 Sistema de Compartilhamento
+
+Implementado mecanismo para compartilhamento entre contas diferentes, com:
+
+* Ativação manual do modo compartilhado
+* Controle de acesso
+* Sincronização bidirecional
+* Atualização entre dispositivos distintos
+* Indicador de progresso durante sincronização
+
+Foi a parte mais complexa do projeto, exigindo controle assíncrono e testes em múltiplos cenários.
+
+---
+
+## 🔔 Notificações Locais
+
+Sistema de agendamento com:
+
+* Controle de permissões
+* Reagendamento automático após edição
+* Remoção segura ao excluir tarefa
+* Sincronização entre estado persistido e notificações ativas
+
+Tratamento de diferenças entre plataformas foi necessário.
+
+---
+
+## 🏗️ Arquitetura
+
+O projeto segue separação clara de responsabilidades:
+
+```
+UI (React Native)
+        ↓
+Gerenciamento de Estado
+        ↓
+Services (Sync / Merge / Drive API)
+        ↓
+Persistência
+   - AsyncStorage (local)
+   - Google Drive (remoto opcional)
 ```
 
-## Step 2: Build and run your app
+A lógica de sincronização é isolada da interface, facilitando manutenção e evolução do sistema.
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+---
 
-### Android
+## ⚖️ Decisões Técnicas e Trade-offs
 
-```sh
-# Using npm
-npm run android
+Durante o desenvolvimento, algumas decisões exigiram equilíbrio entre simplicidade, segurança e complexidade arquitetural.
 
-# OR using Yarn
-yarn android
+### 1️⃣ Uso do Google Drive como camada remota
+
+**Vantagem:**
+
+* Sem necessidade de backend próprio
+* Redução de custo de infraestrutura
+* Persistência em nuvem já disponível
+
+**Trade-off:**
+
+* Menor controle sobre autenticação
+* Dependência de API externa
+* Maior complexidade na lógica de sincronização
+
+---
+
+### 2️⃣ Estratégia de Merge ao invés de Sobrescrita
+
+**Vantagem:**
+
+* Preservação de dados
+* Redução de risco de perda de informações
+* Maior previsibilidade
+
+**Trade-off:**
+
+* Algoritmo mais complexo
+* Necessidade de validação adicional
+* Maior esforço de teste
+
+---
+
+### 3️⃣ Arquitetura Offline-First
+
+**Vantagem:**
+
+* Aplicação funcional sem internet
+* Melhor experiência do usuário
+
+**Trade-off:**
+
+* Sincronização mais complexa
+* Maior responsabilidade na consistência local
+
+---
+
+## 🛠️ Tecnologias Utilizadas
+
+* React Native
+* TypeScript
+* AsyncStorage
+* Google Drive API
+* Controle de estado assíncrono
+* GitHub Pages (interface auxiliar de compartilhamento)
+
+---
+
+#🇺🇸 English
+
+## 📌 About the Project
+
+**ToDoFeito** is a task management application built with React Native, designed around an **offline-first architecture**, with optional synchronization via Google Drive.
+
+Beyond being a simple task app, this project focuses on solving a real engineering challenge:
+
+> How can we guarantee data consistency across multiple devices without relying on a dedicated backend?
+
+The system was designed to use Google Drive as an optional remote persistence layer while maintaining:
+
+* Full offline functionality
+* Deterministic conflict resolution
+* Data integrity
+* Cross-account sharing support
+
+The result is an application that works entirely offline but can synchronize safely and predictably when connectivity is available.
+
+📩 To enable Drive Sync access:
+**[gabrieln99626@gmail.com](mailto:gabrieln99626@gmail.com)**
+
+---
+
+## 🎯 Technical Challenge
+
+Most synchronized applications rely on centralized backends.
+
+The challenge here was to use Google Drive as a remote storage layer while preserving:
+
+* Consistency
+* Predictability
+* Data safety
+
+It was necessary to prevent:
+
+* Blind overwrites
+* Data loss
+* Duplicate inconsistencies
+* Cross-device conflicts
+
+---
+
+## 🔄 Implemented Solution
+
+A **deterministic merge-based synchronization strategy** was implemented.
+
+### Sync Flow
+
+1. Download full remote dataset
+2. Compare with local state
+3. Perform ID-based merge
+4. Upload consolidated state
+
+### Rules Applied
+
+* Never automatically delete remote data
+* Update only matching IDs
+* Preserve unique entries
+* Validate before upload
+
+This model reduces inconsistency risks and keeps synchronization predictable.
+
+---
+
+## 👥 Sharing System
+
+A sharing mechanism was implemented allowing different accounts to access the same dataset, including:
+
+* Manual shared mode activation
+* Access control
+* Bidirectional sync
+* Cross-device updates
+* Sync progress indicator
+
+This was the most complex part of the project, requiring careful asynchronous control and multi-scenario testing.
+
+---
+
+## 🔔 Local Notifications
+
+The app includes a scheduled local notification system with:
+
+* Permission handling
+* Automatic rescheduling after edits
+* Safe removal on task deletion
+* Synchronization between persisted state and active notifications
+
+Platform-specific differences were handled to ensure reliability.
+
+---
+
+## 🏗️ Architecture
+
+Clear separation of concerns:
+
+```
+UI (React Native)
+        ↓
+State Management
+        ↓
+Services Layer (Sync / Merge / Drive API)
+        ↓
+Persistence Layer
+   - AsyncStorage (local)
+   - Google Drive (remote optional)
 ```
 
-### iOS
+Synchronization logic is isolated from UI components, improving maintainability and scalability.
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+---
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+## ⚖️ Technical Decisions & Trade-offs
 
-```sh
-bundle install
-```
+### 1️⃣ Using Google Drive as Remote Layer
 
-Then, and every time you update your native dependencies, run:
+**Advantages:**
 
-```sh
-bundle exec pod install
-```
+* No need for custom backend
+* Reduced infrastructure cost
+* Built-in cloud persistence
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+**Trade-offs:**
 
-```sh
-# Using npm
-npm run ios
+* Limited authentication control
+* External API dependency
+* Increased sync logic complexity
 
-# OR using Yarn
-yarn ios
-```
+---
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+### 2️⃣ Merge Strategy Instead of Overwrite
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+**Advantages:**
 
-## Step 3: Modify your app
+* Data preservation
+* Reduced loss risk
+* Predictable sync behavior
 
-Now that you have successfully run the app, let's make changes!
+**Trade-offs:**
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+* More complex algorithm
+* Additional validation required
+* Higher testing effort
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+---
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+### 3️⃣ Offline-First Architecture
 
-## Congratulations! :tada:
+**Advantages:**
 
-You've successfully run and modified your React Native App. :partying_face:
+* Fully functional without internet
+* Better user experience
 
-### Now what?
+**Trade-offs:**
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+* More complex synchronization
+* Greater responsibility for local consistency
 
-# Troubleshooting
+---
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+## 🛠️ Technologies
 
-# Learn More
+* React Native
+* TypeScript
+* AsyncStorage
+* Google Drive API
+* Asynchronous state control
+* GitHub Pages (auxiliary sharing interface)
 
-To learn more about React Native, take a look at the following resources:
+---
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+## 📷 Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/home.png" width="250"/>
+  <img src="docs/screenshots/task-edit.png" width="250"/>
+  <img src="docs/screenshots/sync-loading.png" width="250"/>
+</p>
+
+
+
+

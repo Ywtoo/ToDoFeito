@@ -39,7 +39,7 @@ export default function Home({
   const insets = useSafeAreaInsets();
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [expandedLabelId, setExpandedLabelId] = useState<string | null>(null);
+  const [expandedLabelIds, setExpandedLabelIds] = useState<Set<string>>(new Set());
 
   // FAB positioning
   const fabMargin = 16;
@@ -108,7 +108,7 @@ export default function Home({
       {/* Centered accordion list (each label expands to show todos) */}
       <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.accordionContainer}>
         {labels.map(label => {
-            const isExpanded = label.id === expandedLabelId;
+            const isExpanded = expandedLabelIds.has(label.id);
             const todosForLabel = getTodosByLabel(label.id);
             return (
               <View key={label.id} style={styles.accordionItem}>
@@ -116,7 +116,12 @@ export default function Home({
                   style={styles.accordionHeader}
                   onPress={() => {
                     setSelectedLabelId(label.id);
-                    setExpandedLabelId(prev => prev === label.id ? null : label.id);
+                    setExpandedLabelIds(prev => {
+                      const next = new Set(prev);
+                      if (next.has(label.id)) next.delete(label.id);
+                      else next.add(label.id);
+                      return next;
+                    });
                   }}>
                   <ThemedIcon lib="Ionicons" name={isExpanded ? 'chevron-down' : 'chevron-forward'} size={18} colorKey="textSecondary" style={styles.chevronIcon} />
                   <View style={[styles.colorDot, getColorDotStyle(label.color)]} />

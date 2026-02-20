@@ -86,7 +86,7 @@ export default function Settings({ user, syncStatus, signIn, signOut, syncAll }:
     <ScrollView style={styles.scrollContainer}>
       <View style={styles.container}>
         <Text style={styles.title}>Configurações</Text>
-        <UpdateChecker />
+        "rev": "adb -s 192.168.1.6:5555 reverse tcp:8081 tcp:8081"        <UpdateChecker receiveBeta={true} />
 
         {/* Seção Google Drive */}
         <View style={styles.section}>

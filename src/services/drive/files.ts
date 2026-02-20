@@ -73,7 +73,6 @@ export const uploadFile = async (
     if (!response.ok) {
       const errorText = await response.text();
       if (response.status === 404 && validFileId) {
-        console.log('[uploadFile] Arquivo não existe mais (404), criando novo...');
         return uploadFile(fileName, content, mimeType, parentId, undefined);
       }
       throw new Error(`Failed to upload file: ${errorText}`);
@@ -89,12 +88,9 @@ export const uploadFile = async (
 
 export const downloadFile = async (fileId: string): Promise<string | null> => {
   try {
-    console.log('[downloadFile] Baixando arquivo:', fileId);
     const response = await fetchWithAuth(`${DRIVE_API_BASE}/files/${fileId}?alt=media&supportsAllDrives=true`, {
       method: 'GET',
     });
-
-    console.log('[downloadFile] Status:', response.status);
     if (!response.ok) {
       const error = await response.text();
       console.error('[downloadFile] Erro HTTP:', response.status, error);
@@ -103,9 +99,7 @@ export const downloadFile = async (fileId: string): Promise<string | null> => {
       }
       throw new Error(`Failed to download file: ${error}`);
     }
-
     const content = await response.text();
-    console.log('[downloadFile] Conteúdo baixado, tamanho:', content.length);
     return content;
   } catch (error) {
     console.error('[downloadFile] Erro ao baixar:', error);
@@ -122,7 +116,7 @@ export const copyFile = async (
   parentId?: string
 ): Promise<{ id: string; name: string } | null> => {
   try {
-    console.log('[copyFile] Copiando arquivo:', { fileId, newName, parentId });
+    
     
     const metadata: any = {};
     if (newName) metadata.name = newName;
@@ -143,7 +137,6 @@ export const copyFile = async (
     }
 
     const data = await response.json();
-    console.log('[copyFile] Arquivo copiado com sucesso:', data.id);
     return { id: data.id, name: data.name };
   } catch (error) {
     console.error('Copy file error:', error);
@@ -156,10 +149,9 @@ export const listFiles = async (
   pageSize: number = 100
 ): Promise<Array<{ id: string; name: string; modifiedTime: string; mimeType: string; parents?: string[] }> | null> => {
   try {
-    console.log('[listFiles] Query:', query);
+    
     const paramsString = buildFilesQueryString(query, pageSize);
     const url = `${DRIVE_API_BASE}/files?${paramsString}`;
-    console.log('[listFiles] URL:', url);
     const response = await fetchWithAuth(url, { method: 'GET' });
     if (!response.ok) {
       const error = await response.text();
@@ -167,7 +159,6 @@ export const listFiles = async (
       throw new Error(`Failed to list files: ${error}`);
     }
     const data = await response.json();
-    console.log('[listFiles] Resultados:', data.files?.length || 0);
     return data.files || [];
   } catch (error) {
     console.error('[listFiles] Erro:', error);
@@ -193,37 +184,26 @@ export const findFile = async (
   parentId: string
 ): Promise<{ id: string; name: string; modifiedTime: string } | null> => {
   try {
-    console.log('[findFile] Buscando arquivo:', fileName, 'na pasta:', parentId);
     let query = `name='${fileName}' and '${parentId}' in parents and trashed=false`;
     let files = await listFiles(query);
-    console.log('[findFile] A busca direta retornou:', files?.length || 0);
     if (!files || files.length === 0) {
-      console.log('[findFile] Busca direta falhou, tentando busca ampla por nome (pode ser lento)...');
       const fallbackParams = serializeFallbackFindParams(fileName, 1000);
       const fallbackUrl = `${DRIVE_API_BASE}/files?${fallbackParams}`;
-      console.log('[findFile] URL fallback:', fallbackUrl);
       const response = await fetchWithAuth(fallbackUrl, { method: 'GET' });
       if (response.ok) {
         const data = await response.json();
         const allFiles = data.files;
         if (allFiles && allFiles.length > 0) {
-          console.log(`[findFile] Encontrados ${allFiles.length} arquivos com nome ${fileName} na busca ampla.`);
           const match = findFileByParent(allFiles, parentId);
           if (match) {
-            console.log('[findFile] Arquivo encontrado via busca ampla e filtro manual de parents!');
             return { id: match.id, name: match.name, modifiedTime: match.modifiedTime };
-          } else {
-            console.log(`[findFile] Nenhum dos arquivos encontrados tem o parent ${parentId}. Parents encontrados:`, allFiles.map((f: any) => f.parents));
           }
         }
       }
     }
-    console.log('[findFile] Arquivos encontrados na busca direta:', files?.length || 0);
     if (!files || files.length === 0) {
-      console.log('[findFile] Nenhum arquivo encontrado');
       return null;
     }
-    console.log('[findFile] Arquivo encontrado:', files[0].id);
     return { id: files[0].id, name: files[0].name, modifiedTime: files[0].modifiedTime };
   } catch (error) {
     console.error('[findFile] Erro ao buscar arquivo:', error);
@@ -288,7 +268,7 @@ export const deleteFile = async (fileId: string): Promise<boolean> => {
       console.error(`Failed to delete file ${fileId}:`, errorText);
       return false;
     }
-    console.log(`[deleteFile] Arquivo/pasta ${fileId} deletado com sucesso`);
+    
     return true;
   } catch (error) {
     console.error('Delete file error:', error);

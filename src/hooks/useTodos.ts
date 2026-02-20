@@ -19,17 +19,16 @@ export function useTodos(defaultLabelId?: string) {
     const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
       if (nextAppState === 'active') {
         const now = Date.now();
-        console.log('[useTodos] App voltou para foreground. Verificando atrasos...');
         
         setTodos((currentTodos) => {
           let hasUpdates = false;
           const updatedTodos = currentTodos.map(todo => {
-            if (!todo.completed && todo.dueAt && todo.dueAt < now) {
+            if (!todo.deleted && !todo.completed && todo.dueAt && todo.dueAt < now) {
               if (todo.updatedAt && (now - todo.updatedAt < 10000)) {
                 return todo;
               }
 
-              console.log(`[useTodos] Tarefa "${todo.title}" está atrasada. Reiniciando ciclo de notificações.`);
+              
               
               // 1. Cancela notificações anteriores desse ciclo (se houver IDs salvos)
               
@@ -70,8 +69,8 @@ export function useTodos(defaultLabelId?: string) {
       let hasUpdates = false;
       
       const checkedTodos = loaded.map(todo => {
-        if (!todo.completed && todo.dueAt && todo.dueAt <= now) {
-           console.log(`[useTodos] Tarefa carregada "${todo.title}" está atrasada. Iniciando ciclo de verificações.`);
+        if (!todo.deleted && !todo.completed && todo.dueAt && todo.dueAt <= now) {
+           
            
            if (todo.notificationId) {
              cancelNotificationById(todo.notificationId);
@@ -109,7 +108,7 @@ export function useTodos(defaultLabelId?: string) {
     reminderInterval?: number;
     labelId?: string;
   }) {
-    console.log('[useTodos] add called', data);
+    
     const now = Date.now();
     
     // Calculate notification interval logic
@@ -137,16 +136,15 @@ export function useTodos(defaultLabelId?: string) {
     const notificationIds: string[] = [];
 
     if (newTodo.dueAt) {
-      console.log('[useTodos] Agendando notificações para nova tarefa');
       
       // 1. Agendar lembrete principal (se configurado)
       if (reminderInterval) {
-         console.log('[useTodos] Agendando lembrete principal');
+         
          const nid = scheduleNotificationFor(newTodo);
          if (nid) notificationIds.push(nid);
       }
 
-      console.log('[useTodos] agendando ciclo de verificações');
+      
       // If dueAt is in the past or now, schedule verification cycle starting now
       const startFromNow = newTodo.dueAt <= Date.now();
       const cycleIds = scheduleVerificationCycle(newTodo, startFromNow);
@@ -155,14 +153,13 @@ export function useTodos(defaultLabelId?: string) {
 
     if (notificationIds.length > 0) {
       newTodo.notificationId = notificationIds.join(',');
-      console.log('[useTodos] Todos criados com Notification IDs:', newTodo.notificationId);
     }
 
     setTodos(prev => [...prev, newTodo]);
   }
 
   function toggle(id: string) {
-    console.log('[useTodos] toggle called', { id });
+    
     setTodos(prev =>
       prev.map(todo => {
         if (todo.id === id) {
@@ -174,7 +171,6 @@ export function useTodos(defaultLabelId?: string) {
 
           // Se a tarefa foi marcada como concluída agora, cancela notificações antigas
           if (!todo.completed && updated.completed) {
-            console.log('[useTodos] Tarefa concluida - cancelando notificações');
             if (todo.notificationId) {
               cancelNotificationById(todo.notificationId);
             }
@@ -183,7 +179,6 @@ export function useTodos(defaultLabelId?: string) {
 
           // Se a tarefa foi DESmarcada (estava concluída e agora não), reagendar ciclo iniciando agora
           if (todo.completed && !updated.completed) {
-            console.log('[useTodos] Tarefa desmarcada, reagendando ciclo para iniciar AGORA (sem delay inicial)');
             if (todo.notificationId) {
               cancelNotificationById(todo.notificationId);
             }
@@ -205,7 +200,7 @@ function updateFields(
   id: string,
   fields: { title?: string; description?: string; dueInitial?: number | null; dueAt?: number | null; reminderInterval?: number },
 ) {
-  console.log('[useTodos] updateFields called', { id, fields });
+  
   setTodos(prev =>
     prev.map(todo => {
       if (todo.id !== id) return todo;
@@ -268,10 +263,7 @@ function updateFields(
 
         // Reagendar se necessário
         if (updated.dueAt && !updated.completed) {
-           console.log('[useTodos] reagendando notificações para todo atualizado', { 
-              dueAt: updated.dueAt, 
-              reminderInterval: updated.reminderInterval 
-           });
+           
 
           // 1. Agendar lembrete principal (se configurado)
           if (updated.reminderInterval) {
@@ -303,7 +295,6 @@ function updateFields(
 }
 
   function remove(id: string) {
-    console.log('[useTodos] remove called (soft delete)', { id });
     const target = todos.find(t => t.id === id);
     if (target) {
       cancelNotificationById(target.notificationId);
@@ -401,7 +392,6 @@ function updateFields(
       const cleaned = cleanupDeletedTodos(prev, daysOld);
       const removed = prev.length - cleaned.length;
       if (removed > 0) {
-        console.log(`[useTodos] Removidos ${removed} todos deletados antigos`);
       }
       return cleaned;
     });

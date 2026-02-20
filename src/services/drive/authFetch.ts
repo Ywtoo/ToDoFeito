@@ -23,7 +23,6 @@ export const fetchWithAuth = async (
 
   // Se 401 (token expirado), invalida cache e tenta uma vez mais
   if (response.status === 401 && retryCount === 0) {
-    console.log('[fetchWithAuth] Token expirado (401), invalidando cache e tentando novamente...');
     invalidateTokenCache();
     return fetchWithAuth(url, options, retryCount + 1);
   }

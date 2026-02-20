@@ -32,8 +32,7 @@ export const useLabelOperations = (
 
     try {
       const ok = await markLabelDeletedOnDrive(label);
-      if (ok) console.log(`[markLabelDeleted] Label "${label.name}" marcado como deletado no metadata`);
-      else console.error('[markLabelDeleted] Falha ao marcar label como deletado');
+      if (!ok) console.error('[markLabelDeleted] Falha ao marcar label como deletado');
     } catch (error) {
       console.error('[markLabelDeleted] Error:', error);
     }
@@ -49,7 +48,7 @@ export const useLabelOperations = (
     }
 
     try {
-      console.log(`[restoreLabel] Restaurando label da pasta: ${folderId}`);
+      
       
       const appFolderId = await ensureAppFolder();
       if (!appFolderId) {
@@ -89,7 +88,7 @@ export const useLabelOperations = (
       const todosWithCorrectLabel = (data.todos || fetched.todos).map(t => ({ ...t, labelId: newLabelId }));
       updateTodos(todosWithCorrectLabel);
 
-      console.log(`[restoreLabel] Label restaurado com sucesso`);
+      
       return true;
     } catch (error: any) {
       console.error('[restoreLabel] Error:', error);
@@ -105,7 +104,7 @@ export const useLabelOperations = (
       folderId: string,
       labelName: string
     ): Promise<{ labelId: string; todos: Todo[] } | null> => {
-      console.log('[useLabelOperations] importSharedLabel chamado:', { folderId, labelName });
+      
       if (!user) {
         console.warn('[useLabelOperations] Usuário não autenticado');
         return null;
@@ -113,7 +112,6 @@ export const useLabelOperations = (
 
       try {
         setOperationStatus({ status: 'syncing' });
-        console.log('[useLabelOperations] Preparando importação de label compartilhado...');
 
         const prepared = await prepareImportSharedLabel(folderId, labelName);
         if (!prepared) throw new Error('Falha ao preparar importação do label compartilhado');
@@ -131,9 +129,7 @@ export const useLabelOperations = (
           },
         };
 
-        console.log('[useLabelOperations] Importando label COLABORATIVO:', labelToImport.name);
         const labelId = importLabel(labelToImport);
-        console.log('[useLabelOperations] Label importado como colaborador, ID:', labelId);
 
         // CORREÇÃO: Garante que os todos importados apontem para o ID do label local
         // (Isso resolve o problema onde o label compartilhado tem um ID diferente do local)
@@ -182,12 +178,11 @@ export const useLabelOperations = (
     }
 
     try {
-      console.log(`[leaveSharedLabel] Saindo do label compartilhado: ${label.name}`);
       const res = await leaveSharedLabelLocal(labelId, labels);
       if (!res) return false;
       setLabels(res.updatedLabels);
       updateTodos(res.filteredTodos);
-      console.log('[leaveSharedLabel] Saiu com sucesso');
+      
       return true;
     } catch (error) {
       console.error('[leaveSharedLabel] Erro:', error);

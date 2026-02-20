@@ -36,6 +36,44 @@ export function useNotifications() {
     );
   }, []);
 
+  const checkAlarmPermission = useCallback(() => {
+    if (Platform.OS === 'android' && (Platform.Version as number) >= 31) {
+      if (AlarmPermission) {
+        AlarmPermission.checkAlarmPermission()
+          .then((granted: boolean) => {
+            if (!granted) {
+              Alert.alert(
+                'Permissão de Alarme Necessária',
+                'Para que o agendamento funcione corretamente, o Android exige a permissão "Alarmes e lembretes".\n\nToque em "Configurar" para ativar.',
+                [
+                  { text: 'Agora não', style: 'cancel' },
+                  {
+                    text: 'Configurar',
+                    onPress: () => {
+                      // Abre especificamente a tela de permissão de alarmes exatos
+                      Linking.sendIntent(
+                        'android.settings.REQUEST_SCHEDULE_EXACT_ALARM',
+                        [{ key: 'package', value: 'com.todofeito' }],
+                      );
+                    },
+                  },
+                ],
+              );
+            }
+          })
+          .catch((e: any) => {
+            console.warn('Falha ao checar permissão de alarme:', e);
+            // Retry em caso de erro
+            setTimeout(checkAlarmPermission, 2000);
+          });
+      } else {
+        console.warn(
+          'Módulo AlarmPermission não encontrado. Verifique se o app foi rebuildado.',
+        );
+      }
+    }
+  }, []);
+
   const ensurePermissions = useCallback(async () => {
     try {
       if (Platform.OS === 'ios') {
@@ -74,73 +112,35 @@ export function useNotifications() {
           );
           const granted = result === PermissionsAndroid.RESULTS.GRANTED;
           setHasPermission(granted);
-          // Apenas alerta se o usuário foi solicitado agora e negou, ou se quisermos ser insistentes.
-          // Para evitar spam na inicialização se já estiver bloqueado (NEVER_ASK_AGAIN),
-          // verificamos se o resultado foi diferent de GRANTED mas não mostramos o alerta automaticamente,
-          // pois o usuario pode ter bloqueado permanentemente.
-          // O ideal é mostrar um banner na UI se !hasPermission.
-          // Mas para manter o comportamento solicitado sem "reverter" ou travar:
-          if (!granted && result !== PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
-             // Mostra alerta apenas se negou agora (não permanentemente)
-             // Ou removemos o alerta automático para não irritar o usuário.
-             // Vamos remover o alerta automático e deixar o usuário ativar via settings se quiser.
-          }
         } else {
           setHasPermission(true);
         }
       }
+
+      // Após pedir permissão de notificações, verifica alarmes exatos (Android 12+)
+      // Pequeno delay para não sobrepor UI
+      setTimeout(() => {
+        checkAlarmPermission();
+      }, 500);
     } catch (e) {
       console.warn('Erro ao solicitar permissão de notificações:', e);
       setHasPermission(false);
+      // Mesmo com erro, tenta verificar alarme
+      setTimeout(() => {
+        checkAlarmPermission();
+      }, 500);
     }
-  }, []);
+  }, [checkAlarmPermission]);
 
   useEffect(() => {
     createChannel();
     ensurePermissions();
-
-    // Solicitar permissão de alarmes exatos (Android 13+)
-    if (Platform.OS === 'android' && Platform.Version >= 33) {
-      if (AlarmPermission) {
-        AlarmPermission.checkAlarmPermission()
-          .then((granted: boolean) => {
-            if (!granted) {
-              Alert.alert(
-                'Permissão de Alarme Necessária',
-                'Para que o agendamento funcione o Android exige a permissão "Alarmes e lembretes".\n\nToque em "Configurar", procure pelo app ToDoFeito e ative a chave.',
-                [
-                  { text: 'Agora não', style: 'cancel' },
-                  {
-                    text: 'Configurar',
-                    onPress: () => {
-                      Linking.sendIntent(
-                        'android.settings.REQUEST_SCHEDULE_EXACT_ALARM',
-                      );
-                    },
-                  },
-                ],
-              );
-            }
-          })
-          .catch((e: any) =>
-            console.warn('Falha ao checar permissão de alarme:', e),
-          );
-      } else {
-        console.warn(
-          'Módulo AlarmPermission não encontrado. Verifique se o app foi rebuildado.',
-        );
-      }
-    }
   }, [createChannel, ensurePermissions]);
 
   const cancelNotificationById = useCallback(
     (notificationId?: string | string[]) => {
       if (!notificationId) return;
       try {
-        console.log(
-          '[Notifications] Delegando cancelNotificationById para util:',
-          notificationId,
-        );
         cancelById(notificationId);
       } catch (e) {
         console.warn('Erro ao cancelar notificação (wrapper):', e);
@@ -184,7 +184,6 @@ export function useNotifications() {
   );
 
   const cancelAllNotifications = useCallback(() => {
-    console.log('[Notifications] Cancelando TODAS as notificações agendadas');
     PushNotification.cancelAllLocalNotifications();
   }, []);
 

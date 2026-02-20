@@ -120,7 +120,7 @@ export const performFullSync = async (
         ownershipRole: (isOwner ? 'owner' : 'collaborator') as 'owner' | 'collaborator',
       };
 
-      console.log(`[performFullSync] Label ${driveLabel.folderName}: ownership=${labelData.ownershipRole}, shared=${labelData.shared}`);
+      // logging removed
 
       result.importEntries.push({
         folderId: driveLabel.folderId,

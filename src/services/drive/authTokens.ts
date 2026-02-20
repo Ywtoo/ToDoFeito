@@ -44,7 +44,7 @@ const refreshAccessToken = async (): Promise<string | null> => {
         }
       }
     } catch (tokensErr) {
-      console.log('[refreshAccessToken] getTokens() falhou, tentando getCurrentUser:', tokensErr);
+      
     }
 
     if (!accessToken) {
@@ -62,7 +62,7 @@ const refreshAccessToken = async (): Promise<string | null> => {
           accessToken = data.serverAuthCode || data.idToken || null;
         }
       } catch (e) {
-        console.log('[refreshAccessToken] signInSilently falhou:', e);
+        
       }
     }
 
@@ -85,7 +85,6 @@ const refreshAccessToken = async (): Promise<string | null> => {
 
 export const invalidateTokenCache = () => {
   tokenCache = null;
-  console.log('[invalidateTokenCache] Cache invalidado');
 };
 
 export default {

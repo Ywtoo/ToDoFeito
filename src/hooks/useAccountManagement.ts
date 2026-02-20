@@ -29,28 +29,22 @@ export const useAccountManagement = () => {
     
     // Verifica se já está logado
     const checkUser = async () => {
-      console.log('[useAccountManagement] Verificando usuário...');
+      
       
       // Primeiro tenta carregar do AsyncStorage (mais rápido)
       const cachedUser = await StorageService.loadDriveUser();
       if (cachedUser) {
-        console.log('[useAccountManagement] Usuário em cache:', cachedUser.email);
         setUser(cachedUser);
       }
       
       // Depois verifica com o Google (valida sessão)
       const currentUser = await getCurrentUser();
       if (currentUser) {
-        console.log('[useAccountManagement] Usuário autenticado:', currentUser.email);
         
         // Verifica se houve troca de conta em relação aos dados locais
         const lastEmail = await StorageService.loadLastSyncedEmail();
         
         if (lastEmail && lastEmail !== currentUser.email) {
-          console.log('[useAccountManagement] Conflito de conta detectado no startup:', {
-            local: lastEmail,
-            remote: currentUser.email
-          });
 
           // Exponha o conflito para a UI decidir
           setAccountConflict({
@@ -70,11 +64,9 @@ export const useAccountManagement = () => {
         }
       } else if (cachedUser) {
         // Se tinha em cache mas getCurrentUser falhou, sessão expirou
-        console.log('[useAccountManagement] Sessão expirou, limpando cache');
         setUser(null);
         await StorageService.saveDriveUser(null);
       } else {
-        console.log('[useAccountManagement] Nenhum usuário logado');
       }
     };
     checkUser();
@@ -118,7 +110,7 @@ export const useAccountManagement = () => {
    */
   const signOut = useCallback(async () => {
     try {
-      console.log('[useAccountManagement] Fazendo logout e limpando sessão...');
+      
       
       // 1. Logout do Google
       await driveSignOut();
@@ -127,7 +119,7 @@ export const useAccountManagement = () => {
       setUser(null);
       await StorageService.saveDriveUser(null);
       
-      console.log('[useAccountManagement] ✓ Sessão limpa');
+      
     } catch (error) {
       console.error('Sign out error:', error);
     }
@@ -137,11 +129,9 @@ export const useAccountManagement = () => {
    * Marca que o usuário foi autenticado (usado por resolvers de conflito)
    */
   const setAuthenticatedUser = useCallback(async (newUser: DriveUser) => {
-    console.log('[useAccountManagement] Setando usuário autenticado:', newUser.email);
     setUser(newUser);
     await StorageService.saveDriveUser(newUser);
     await StorageService.saveLastSyncedEmail(newUser.email);
-    console.log('[useAccountManagement] ✓ Usuário autenticado salvo');
   }, []);
 
   /**

@@ -1,6 +1,6 @@
 {
   "name": "todofeito",
-  "version": "0.7.3",
+  "version": "0.7.3‑beta.1",
   "private": true,
   "scripts": {
     "android": "react-native run-android",
@@ -24,8 +24,8 @@
     "@react-navigation/native-stack": "^7.12.0",
     "react": "19.2.3",
     "react-native": "0.84.0",
-    "react-native-device-info": "^10.3.0",
     "react-native-date-picker": "^5.0.13",
+    "react-native-device-info": "^10.3.0",
     "react-native-modal-datetime-picker": "^18.0.0",
     "react-native-push-notification": "^8.1.1",
     "react-native-safe-area-context": "^5.6.2",
@@ -51,11 +51,12 @@
     "@types/react-native-vector-icons": "^6.4.18",
     "@types/react-test-renderer": "^19.1.0",
     "eslint": "^8.19.0",
+    "hermes-engine": "^0.11.0",
     "jest": "^29.6.3",
     "prettier": "2.8.8",
     "react-native-make": "^1.0.1",
-    "sharp": "^0.32.1",
     "react-test-renderer": "19.2.3",
+    "sharp": "^0.32.1",
     "typescript": "^5.9.3"
   },
   "engines": {

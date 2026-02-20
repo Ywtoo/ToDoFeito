@@ -105,9 +105,7 @@ export const LabelsScreen: React.FC<LabelsScreenProps> = ({
       }
 
       // Habilita compartilhamento
-      console.log('[Labels] Habilitando compartilhamento para label:', label.name);
       const enabled = await enableSharing(label);
-      console.log('[Labels] Compartilhamento habilitado?', enabled);
       if (!enabled) {
         Alert.alert('Erro', 'Falha ao habilitar compartilhamento');
         setSharingLabelId(null);

@@ -13,15 +13,88 @@ export function scheduleVerificationCycle(
   const offsets = customOffsets || DEFAULT_CHECK_SCHEDULE_OFFSETS;
   const base = startFromNow ? Date.now() : todo.dueAt;
   const generatedIds: string[] = [];
+  const now = Date.now();
 
+  // 1) Pré-notificação: 30 minutos antes do início (se houver `dueInitial`)
+  if (todo.dueInitial) {
+    const preWhen = new Date(Number(todo.dueInitial) - 30 * 60 * 1000);
+    if (preWhen.getTime() > now) {
+      const preId = generateNotifId();
+      try {
+        PushNotification.localNotificationSchedule({
+          id: preId,
+          channelId: 'completion-channel',
+          title: 'Começa em 30 minutos',
+          message: todo.title,
+          date: preWhen,
+          playSound: true,
+          vibrate: true,
+          smallIcon: 'ic_notification_small',
+          allowWhileIdle: true,
+          userInfo: { notificationId: preId, todoId: todo.id, type: 'pre_start' },
+        });
+        generatedIds.push(preId);
+      } catch (e) {
+        console.warn('[Notifications] Falha ao agendar pré-notificação:', e);
+      }
+    }
+
+    // 2) Notificação no início
+    const startWhen = new Date(Number(todo.dueInitial));
+    if (startWhen.getTime() > now) {
+      const startId = generateNotifId();
+      try {
+        PushNotification.localNotificationSchedule({
+          id: startId,
+          channelId: 'completion-channel',
+          title: 'Começou',
+          message: todo.title,
+          date: startWhen,
+          playSound: true,
+          vibrate: true,
+          smallIcon: 'ic_notification_small',
+          allowWhileIdle: true,
+          userInfo: { notificationId: startId, todoId: todo.id, type: 'start' },
+        });
+        generatedIds.push(startId);
+      } catch (e) {
+        console.warn('[Notifications] Falha ao agendar notificação de início:', e);
+      }
+    }
+  }
+
+  // 3) Notificação no término (dueAt)
+  const endWhen = new Date(Number(todo.dueAt));
+  if (endWhen.getTime() > now) {
+    const endId = generateNotifId();
+    try {
+      PushNotification.localNotificationSchedule({
+        id: endId,
+        channelId: 'completion-channel',
+        title: 'Prazo',
+        message: todo.title,
+        date: endWhen,
+        playSound: true,
+        vibrate: true,
+        smallIcon: 'ic_notification_small',
+        allowWhileIdle: true,
+        userInfo: { notificationId: endId, todoId: todo.id, type: 'end' },
+      });
+      generatedIds.push(endId);
+    } catch (e) {
+      console.warn('[Notifications] Falha ao agendar notificação de término:', e);
+    }
+  }
+
+  // 4) Pós-término: os offsets já existentes (mantemos comportamento anterior)
   offsets.forEach((offsetMs, index) => {
     let effectiveOffset = offsetMs;
     if (startFromNow && index === 0) effectiveOffset = __DEV__ ? 5 * 1000 : 60 * 1000;
 
     const when = new Date(base + effectiveOffset);
-    if (when.getTime() <= Date.now()) return;
+    if (when.getTime() <= now) return;
 
-    const notifId = generateNotifId(index);
+    const notifId = generateNotifId(index + 1000);
 
     try {
       PushNotification.localNotificationSchedule({
@@ -32,6 +105,7 @@ export function scheduleVerificationCycle(
         date: when,
         playSound: true,
         vibrate: true,
+          smallIcon: 'ic_notification_small',
         allowWhileIdle: true,
         userInfo: { notificationId: notifId, todoId: todo.id, type: 'cycle_check' },
       });
@@ -41,7 +115,6 @@ export function scheduleVerificationCycle(
       console.warn('[Notifications] Falha ao agendar check:', e);
     }
   });
-
   return generatedIds;
 }
 
@@ -62,6 +135,7 @@ export function scheduleNotificationFor(todo: Todo): string | undefined {
         message: todo.title,
         playSound: true,
         vibrate: true,
+        smallIcon: 'ic_notification_small',
       });
     } else {
       PushNotification.localNotificationSchedule({
@@ -73,6 +147,7 @@ export function scheduleNotificationFor(todo: Todo): string | undefined {
         playSound: true,
         vibrate: true,
         allowWhileIdle: true,
+        smallIcon: 'ic_notification_small',
       });
     }
     return id;

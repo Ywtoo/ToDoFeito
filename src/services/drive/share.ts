@@ -32,26 +32,18 @@ export const enableSharing = async (
   }
 
   const { folderId, fileId } = label.driveMetadata;
-  console.log('[enableSharing] Habilitando compartilhamento:', { folderId, fileId });
 
   try {
     // Torna a pasta e o arquivo acessíveis por qualquer pessoa com o link
-    console.log('[enableSharing] Criando permissão para pasta:', folderId);
     const folderPermission = await createPublicPermission(folderId);
-    console.log('[enableSharing] Permissão da pasta:', folderPermission);
     
     let filePermission = true;
 
     if (fileId) {
-      console.log('[enableSharing] Criando permissão para arquivo:', fileId);
       filePermission = await createPublicPermission(fileId);
-      console.log('[enableSharing] Permissão do arquivo:', filePermission);
-    } else {
-      console.log('[enableSharing] FileId vazio, pulando permissão de arquivo');
     }
 
     const success = folderPermission && filePermission;
-    console.log('[enableSharing] Compartilhamento', success ? 'habilitado' : 'falhou');
     return success;
   } catch (error) {
     console.error('[enableSharing] Erro:', error);

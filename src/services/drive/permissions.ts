@@ -16,7 +16,7 @@ export const createPublicPermission = async (fileOrFolderId: string): Promise<bo
       return true;
     }
 
-    console.log('[createPublicPermission] Criando permissão para:', fileOrFolderId);
+    
 
     const response = await fetchWithAuth(`${DRIVE_API_BASE}/files/${fileOrFolderId}/permissions?supportsAllDrives=true`, {
       method: 'POST',
@@ -35,7 +35,6 @@ export const createPublicPermission = async (fileOrFolderId: string): Promise<bo
       throw new Error(`Failed to create permission (${response.status}): ${errorText}`);
     }
 
-    console.log('[createPublicPermission] Permissão criada com sucesso');
     return true;
   } catch (error) {
     console.error('[createPublicPermission] Erro ao criar permissão:', error);
