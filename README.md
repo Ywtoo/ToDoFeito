@@ -1,7 +1,7 @@
 # 🚀 ToDoFeito — Offline-First Task Manager com Sincronização Inteligente
 
 <p align="center">
-  <img src="docs/screenshots/preview.png" alt="ToDoFeito Preview" width="750"/>
+  <img src="docs/screenshots/label-shared.png" alt="ToDoFeito Preview" width="750"/>
 </p>
 
 <p align="center">
@@ -374,13 +374,21 @@ Synchronization logic is isolated from UI components, improving maintainability 
 
 ---
 
-## 📷 Screenshots
+## 📱 Screenshots
 
-<p align="center">
-  <img src="docs/screenshots/home.png" width="250"/>
-  <img src="docs/screenshots/task-edit.png" width="250"/>
-  <img src="docs/screenshots/sync-loading.png" width="250"/>
-</p>
+### 🏠 Tasks Overview
+<img src="docs/screenshots/tasks-light.png" width="250"/>
+<img src="docs/screenshots/tasks-dark.png" width="250"/>
+
+### 🏷️ Labels & Sharing
+<img src="docs/screenshots/labels-overview.png" width="250"/>
+<img src="docs/screenshots/label-shared.png" width="250"/>
+
+### 🔄 Sync Feedback
+<img src="docs/screenshots/sync-progress.png" width="250"/>
+
+### ⚙️ Settings
+<img src="docs/screenshots/settings.png" width="250"/>
 
 
 
