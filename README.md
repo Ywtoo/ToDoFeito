@@ -1,11 +1,11 @@
 # 🚀 ToDoFeito — Offline-First Task Manager com Sincronização Inteligente
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Status-Beta-yellow?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" />
-  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" />
-  <img src="https://img.shields.io/badge/Offline_First-000000?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/Google_Drive_API-34A853?style=for-the-badge&logo=google-drive&logoColor=white" />
+  <img src="https://img.shields.io/badge/STATUS-BETA-f59e0b?style=for-the-badge&labelColor=111827" />
+  <img src="https://img.shields.io/badge/REACT%20NATIVE-20232A?style=for-the-badge&logo=react&logoColor=61DAFB&labelColor=111827" />
+  <img src="https://img.shields.io/badge/TYPESCRIPT-3178C6?style=for-the-badge&logo=typescript&logoColor=white&labelColor=111827" />
+  <img src="https://img.shields.io/badge/ARCHITECTURE-OFFLINE%20FIRST-000000?style=for-the-badge&labelColor=111827" />
+  <img src="https://img.shields.io/badge/INTEGRATION-GOOGLE%20DRIVE%20API-34A853?style=for-the-badge&logo=googledrive&logoColor=white&labelColor=111827" />
 </p>
 
 ## 📚 Summary | Sumário
